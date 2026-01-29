@@ -1,0 +1,39 @@
+<?php 
+/*
+ * Router Configuration Template
+ * 
+ * Copy this file to config.php and fill in your router details
+ * Format: $data['SESSION_NAME'] = array(
+ *   '1' => 'SESSION_NAME!IP:PORT',
+ *   'SESSION_NAME@|@USERNAME',
+ *   'SESSION_NAME#|#PASSWORD_BASE64',
+ *   'SESSION_NAME%ROUTER_NAME',
+ *   'SESSION_NAME^DOMAIN',
+ *   'SESSION_NAME&CURRENCY',
+ *   'SESSION_NAME*CURRENCY_SYMBOL',
+ *   'SESSION_NAME(EXPIRY_MODE',
+ *   'SESSION_NAME)',
+ *   'SESSION_NAME=EXPIRY_DAYS',
+ *   'SESSION_NAME@!@STATUS'
+ * );
+ */
+
+if(substr($_SERVER["REQUEST_URI"], -10) == "config.php"){header("Location:./");}; 
+
+// Admin credentials (default: mikpay/mikpay)
+$data['mikpay'] = array ('1'=>'mikpay<|<mikpay','mikpay>|>aWNlbA==');
+
+// Example router configuration (uncomment and modify)
+// $data['ROUTER1'] = array (
+//   '1'=>'ROUTER1!192.168.1.1:8728',
+//   'ROUTER1@|@admin',
+//   'ROUTER1#|#YOUR_PASSWORD_BASE64',
+//   'ROUTER1%My Router Name',
+//   'ROUTER1^mydomain.com',
+//   'ROUTER1&Rp',
+//   'ROUTER1*10',
+//   'ROUTER1(1',
+//   'ROUTER1)',
+//   'ROUTER1=10',
+//   'ROUTER1@!@enable'
+// );

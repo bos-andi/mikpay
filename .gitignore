@@ -1,0 +1,38 @@
+# Data files - Jangan di-commit karena berisi data user
+include/*.json
+include/config.php
+
+# Custom logos (logo per router)
+img/logo-*.png
+
+# Keep default logo and favicon
+!img/favicon.png
+!img/logo.png
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+
+# Temporary files
+voucher/temp.php
+*.tmp
+
+# Environment files
+.env
+.env.local
+
+# Backup files
+*.bak
+*.backup
+*~
