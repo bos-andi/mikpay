@@ -251,28 +251,6 @@ function getAllUsersDb($limit = 100, $offset = 0) {
 }
 
 /**
- * Get all users - wrapper that checks database first, then falls back to subscription.php
- */
-if (!function_exists('getAllUsers')) {
-    function getAllUsers($limit = 100, $offset = 0) {
-        // Try database first
-        if (function_exists('getAllUsersDb')) {
-            $dbUsers = getAllUsersDb($limit, $offset);
-            if (!empty($dbUsers)) {
-                return $dbUsers;
-            }
-        }
-        
-        // Fallback to subscription.php getAllUsers if exists
-        if (function_exists('getAllUsers')) {
-            return getAllUsers();
-        }
-        
-        return array();
-    }
-}
-
-/**
  * Create new user
  */
 function createUser($username, $password, $email = '', $fullName = '', $phone = '', $role = 'user') {
