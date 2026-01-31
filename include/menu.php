@@ -468,9 +468,6 @@ include('./info.php');
   <a href="./?id=fonnte&session=<?= $session; ?>" class="menu <?= $sfonnte ?? '' ?>"> <i class="fa fa-whatsapp" style="color:#25D366;"></i> WhatsApp API </a>
   <a href="./?hotspot=uplogo&session=<?= $session; ?>" class="menu <?= $uplogo; ?>"> <i class="fa fa-upload "></i> <?= $_upload_logo ?> </a>
   <a href="./admin.php?id=change-password" class="menu"> <i class="fa fa-key"></i> Ubah Password </a>
-  <?php if ($isAdmin): ?>
-  <a href="./admin.php?id=users" class="menu <?= $susers ?? '' ?>"> <i class="fa fa-users"></i> Kelola User </a>
-  <?php endif; ?>
   <a href="./?hotspot=template-editor&template=default&session=<?= $session; ?>" class="menu <?= $teditor; ?>"> <i class="fa fa-edit "></i> <?= $_template_editor ?> </a>          
   </div>
   <!--subscription-->
