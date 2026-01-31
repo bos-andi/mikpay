@@ -73,13 +73,30 @@ if ($id == "login" || substr($url, -1) == "p") {
     $user = $_POST['user'];
     $pass = $_POST['pass'];
     
+    // Try admin login first (from config.php)
     if ($user == $useradm && $pass == decrypt($passadm)) {
       $_SESSION["mikpay"] = $user;
       echo "<script>window.location='./admin.php?id=sessions'</script>";
       exit;
     }
     
-    $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Invalid username or password.</div>';
+    // Try user login from users.json
+    include_once('./include/subscription.php');
+    $jsonUser = getUser($user);
+    if ($jsonUser && isset($jsonUser['password']) && $jsonUser['password'] === $pass) {
+      // Check if user is active
+      if (isset($jsonUser['status']) && $jsonUser['status'] === 'active') {
+        $_SESSION["mikpay"] = $user;
+        $_SESSION["user_id"] = $user;
+        $_SESSION["user_from_json"] = true;
+        echo "<script>window.location='./admin.php?id=sessions'</script>";
+        exit;
+      } else {
+        $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Akun Anda telah dinonaktifkan.</div>';
+      }
+    } else {
+      $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Invalid username or password.</div>';
+    }
   }
   
   include_once('./include/login.php');

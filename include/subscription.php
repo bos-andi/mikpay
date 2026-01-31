@@ -375,11 +375,11 @@ function saveUser($userId, $userData) {
 }
 
 /**
- * Get user by ID
+ * Get user by ID (only from JSON, not from config.php)
  */
 function getUser($userId) {
-    $users = getAllUsers();
-    foreach ($users as $user) {
+    $jsonUsers = getJsonUsers();
+    foreach ($jsonUsers as $user) {
         if ($user['id'] === $userId) {
             return $user;
         }

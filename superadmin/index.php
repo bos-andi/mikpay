@@ -929,19 +929,28 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
                         <?php endif; ?>
                     </td>
                     <td>
-                        <?php $status = isset($user['status']) ? $user['status'] : 'active'; ?>
-                        <?php if ($status === 'active'): ?>
-                        <button class="action-btn deactivate" onclick="openDeactivateModal('<?= $user['id'] ?>', '<?= htmlspecialchars(isset($user['router_name']) ? $user['router_name'] : $user['id']) ?>')">
-                            <i class="fa fa-ban"></i> Nonaktifkan
-                        </button>
-                        <?php else: ?>
-                        <form method="POST" style="display:inline;">
-                            <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                            <button type="submit" name="activate_user" class="action-btn activate">
-                                <i class="fa fa-check"></i> Aktifkan
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <?php $status = isset($user['status']) ? $user['status'] : 'active'; ?>
+                            <?php if ($status === 'active'): ?>
+                            <button class="action-btn deactivate" onclick="openDeactivateModal('<?= $user['id'] ?>', '<?= htmlspecialchars(isset($user['router_name']) ? $user['router_name'] : $user['id']) ?>')">
+                                <i class="fa fa-ban"></i> Nonaktifkan
                             </button>
-                        </form>
-                        <?php endif; ?>
+                            <?php else: ?>
+                            <form method="POST" style="display:inline;">
+                                <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                                <button type="submit" name="activate_user" class="action-btn activate">
+                                    <i class="fa fa-check"></i> Aktifkan
+                                </button>
+                            </form>
+                            <?php endif; ?>
+                            
+                            <form method="POST" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus user <?= htmlspecialchars($user['id']) ?>? Tindakan ini tidak dapat dibatalkan.');">
+                                <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                                <button type="submit" name="delete_user" class="action-btn" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                    <i class="fa fa-trash"></i> Hapus
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
