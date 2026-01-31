@@ -172,6 +172,9 @@ if ($id == "login" || substr($url, -1) == "p") {
 } elseif ($id == "subscription") {
   include_once('./include/menu.php');
   include_once('./settings/subscription.php');
+} elseif ($id == "payment") {
+  include_once('./include/menu.php');
+  include_once('./settings/payment.php');
 } elseif ($id == "users") {
   include_once('./include/menu.php');
   include_once('./admin/users.php');

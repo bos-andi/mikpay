@@ -438,12 +438,9 @@ if (isset($_POST['request_payment'])) {
                 <li><?= $feature ?></li>
                 <?php endforeach; ?>
             </ul>
-            <form method="POST" style="margin:0;">
-                <input type="hidden" name="package" value="<?= $key ?>">
-                <button type="submit" name="request_payment" class="btn-subscribe <?= $key == 'pro' ? 'primary' : 'outline' ?>" <?= $hasPending ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '' ?>>
-                    <?= $hasPending ? 'Menunggu Konfirmasi' : 'Pilih Paket' ?>
-                </button>
-            </form>
+            <a href="./admin.php?id=payment&package=<?= $key ?>&session=<?= $session ?>" class="btn-subscribe <?= $key == 'pro' ? 'primary' : 'outline' ?>" style="display: inline-block; text-decoration: none; text-align: center; <?= $hasPending ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : '' ?>">
+                <?= $hasPending ? 'Menunggu Konfirmasi' : 'Pilih Paket' ?>
+            </a>
         </div>
         <?php endforeach; ?>
     </div>
