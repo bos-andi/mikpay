@@ -49,7 +49,12 @@ function getDBConnection() {
  * Initialize database tables
  */
 function initDatabase() {
-    $conn = getDBConnection();
+    try {
+        $conn = getDBConnection();
+    } catch (Exception $e) {
+        // Database connection failed, can't initialize
+        return false;
+    }
     
     // Create users table
     $sql = "CREATE TABLE IF NOT EXISTS `users` (
@@ -77,7 +82,8 @@ function initDatabase() {
     try {
         $conn->exec($sql);
     } catch (PDOException $e) {
-        error_log("Database init error: " . $e->getMessage());
+        error_log("Database init error (users table): " . $e->getMessage());
+        return false;
     }
     
     // Create user_sessions table (untuk menyimpan session MikroTik per user)
@@ -101,8 +107,10 @@ function initDatabase() {
     
     try {
         $conn->exec($sql2);
+        return true;
     } catch (PDOException $e) {
-        error_log("Database init error: " . $e->getMessage());
+        error_log("Database init error (user_sessions table): " . $e->getMessage());
+        return false;
     }
 }
 
