@@ -408,6 +408,24 @@ if (isset($_POST['request_payment'])) {
                 Rp <?= number_format($pkg['price'], 0, ',', '.') ?>
                 <span>/<?= $pkg['duration'] >= 365 ? 'selamanya' : $pkg['duration'] . ' hari' ?></span>
             </div>
+            <?php if (isset($pkg['discount']) && $pkg['discount'] > 0): ?>
+            <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #ef4444; border-radius: 10px; padding: 12px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <div style="font-size: 12px; color: #dc2626; font-weight: 600; margin-bottom: 4px;">HARGA NORMAL</div>
+                        <div style="text-decoration: line-through; color: #94a3b8; font-size: 18px; font-weight: 600;">
+                            Rp <?= number_format($pkg['original_price'], 0, ',', '.') ?>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 12px; color: #dc2626; font-weight: 600; margin-bottom: 4px;">HEMAT</div>
+                        <div style="color: #dc2626; font-size: 20px; font-weight: 700;">
+                            Rp <?= number_format($pkg['discount'], 0, ',', '.') ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
             <p class="package-duration">
                 <?php if ($pkg['duration'] >= 365): ?>
                     Akses selamanya

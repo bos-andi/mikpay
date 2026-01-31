@@ -14,78 +14,29 @@ if (!defined('USERS_FILE')) {
 
 // Paket langganan dengan fitur detail
 $subscriptionPackages = array(
-    'starter' => array(
-        'name' => 'Starter',
+    'monthly' => array(
+        'name' => 'Paket 1 Bulan',
         'price' => 50000,
-        'duration' => 30,
-        'max_customers' => 50,
-        'max_routers' => 1,
-        'max_users' => 1,
-        'features' => array(
-            'Dashboard',
-            'PPP Secrets',
-            'PPP Profiles',
-            'PPP Active',
-            'Quick Print'
-        ),
-        'disabled_features' => array(
-            'billing', 'reports', 'whatsapp', 'hotspot', 'voucher', 
-            'traffic_monitor', 'dhcp_leases', 'multi_router'
-        ),
-        'support' => 'Email (48 jam)',
-        'color' => '#64748b'
-    ),
-    'professional' => array(
-        'name' => 'Professional',
-        'price' => 150000,
-        'duration' => 30,
-        'max_customers' => 200,
-        'max_routers' => 3,
-        'max_users' => 2,
-        'features' => array(
-            'Semua fitur Starter',
-            'Tagihan WiFi (Billing)',
-            'Laporan Keuangan',
-            'Hotspot Management',
-            'Voucher System',
-            'DHCP Leases'
-        ),
-        'disabled_features' => array(
-            'whatsapp', 'traffic_monitor', 'multi_user', 'api_access'
-        ),
-        'support' => 'Email + WhatsApp (24 jam)',
-        'color' => '#3b82f6'
-    ),
-    'business' => array(
-        'name' => 'Business',
-        'price' => 300000,
-        'duration' => 30,
-        'max_customers' => 500,
-        'max_routers' => 10,
-        'max_users' => 5,
-        'features' => array(
-            'Semua fitur Professional',
-            'WhatsApp API (Fonnte)',
-            'Reminder Otomatis',
-            'Traffic Monitor',
-            'Log Activity',
-            'Multi-User Admin'
-        ),
-        'disabled_features' => array(
-            'api_access', 'white_label', 'custom_domain'
-        ),
-        'support' => 'Priority (12 jam)',
-        'color' => '#8b5cf6'
-    ),
-    'enterprise' => array(
-        'name' => 'Enterprise',
-        'price' => 500000,
         'duration' => 30,
         'max_customers' => -1, // unlimited
         'max_routers' => -1,
         'max_users' => -1,
         'features' => array(
-            'Semua fitur Business',
+            'Dashboard',
+            'PPP Secrets',
+            'PPP Profiles',
+            'PPP Active',
+            'Quick Print',
+            'Tagihan WiFi (Billing)',
+            'Laporan Keuangan',
+            'Hotspot Management',
+            'Voucher System',
+            'DHCP Leases',
+            'WhatsApp API (Fonnte)',
+            'Reminder Otomatis',
+            'Traffic Monitor',
+            'Log Activity',
+            'Multi-User Admin',
             'Unlimited Router',
             'Unlimited User Admin',
             'API Access',
@@ -94,8 +45,46 @@ $subscriptionPackages = array(
             'Backup Otomatis'
         ),
         'disabled_features' => array(),
-        'support' => 'Dedicated (4 jam + Telepon)',
-        'color' => '#f59e0b'
+        'support' => 'Email + WhatsApp (24 jam)',
+        'color' => '#4D44B5',
+        'discount' => null,
+        'original_price' => null
+    ),
+    'monthly5' => array(
+        'name' => 'Paket 5 Bulan',
+        'price' => 200000,
+        'duration' => 150, // 5 bulan = 150 hari
+        'max_customers' => -1, // unlimited
+        'max_routers' => -1,
+        'max_users' => -1,
+        'features' => array(
+            'Dashboard',
+            'PPP Secrets',
+            'PPP Profiles',
+            'PPP Active',
+            'Quick Print',
+            'Tagihan WiFi (Billing)',
+            'Laporan Keuangan',
+            'Hotspot Management',
+            'Voucher System',
+            'DHCP Leases',
+            'WhatsApp API (Fonnte)',
+            'Reminder Otomatis',
+            'Traffic Monitor',
+            'Log Activity',
+            'Multi-User Admin',
+            'Unlimited Router',
+            'Unlimited User Admin',
+            'API Access',
+            'White Label',
+            'Custom Domain',
+            'Backup Otomatis'
+        ),
+        'disabled_features' => array(),
+        'support' => 'Email + WhatsApp (24 jam)',
+        'color' => '#f97316',
+        'discount' => 50000, // Diskon dari 250.000 (5x50.000) menjadi 200.000
+        'original_price' => 250000
     )
 );
 
