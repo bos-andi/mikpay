@@ -1380,12 +1380,6 @@ if (file_exists($fonnteFile)) {
     <div class="billing-table-header">
         <h3><i class="fa fa-users"></i> Daftar Pelanggan WiFi</h3>
         <div style="display:flex; gap:8px;">
-            <a href="./ppp/export-excel-template.php?session=<?= $session ?>" 
-               class="btn-action btn-excel" 
-               title="Download Template CSV untuk diisi di Excel"
-               download>
-                <i class="fa fa-file-excel-o"></i> Template CSV
-            </a>
             <button class="btn-action btn-send-wa" onclick="showBulkWAModal()" title="Kirim WA Massal">
                 <i class="fa fa-whatsapp"></i>
             </button>
