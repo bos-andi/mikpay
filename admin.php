@@ -69,75 +69,19 @@ include_once('./lib/formatbytesbites.php');
     
 <?php
 if ($id == "login" || substr($url, -1) == "p") {
-
-  // Include database for multi-user login
-  $dbLoaded = false;
-  try {
-    if (file_exists('./include/database.php')) {
-      include_once('./include/database.php');
-      // Test if database connection works
-      if (function_exists('verifyUser')) {
-        try {
-          // Try to get connection (will throw if database not configured)
-          $testConn = getDBConnection();
-          $dbLoaded = true;
-        } catch (Exception $e) {
-          // Database not configured, use old login
-          $dbLoaded = false;
-        }
-      }
-    }
-  } catch (Exception $e) {
-    // Database not available, use old login
-    $dbLoaded = false;
-  }
-  
   if (isset($_POST['login'])) {
     $user = $_POST['user'];
     $pass = $_POST['pass'];
     
-    // Try database login first
-    if ($dbLoaded) {
-      try {
-        $dbUser = verifyUser($user, $pass);
-        
-        if ($dbUser) {
-          // Database user login successful
-          $_SESSION["mikpay"] = $user;
-          $_SESSION["user_id"] = $dbUser['id'];
-          $_SESSION["user_role"] = $dbUser['role'];
-          $_SESSION["user_username"] = $dbUser['username'];
-          
-          // Check subscription
-          if (function_exists('isUserSubscriptionActive')) {
-            if (!isUserSubscriptionActive($dbUser['id'])) {
-              // Subscription expired - redirect to subscription page
-              echo "<script>window.location='./?id=subscription&session=" . htmlspecialchars($user) . "'</script>";
-              exit;
-            }
-          }
-          
-          echo "<script>window.location='./admin.php?id=sessions'</script>";
-          exit;
-        }
-      } catch (Exception $e) {
-        // Database error, fallback to old login
-      }
-    }
-    
-    // Fallback to old admin login (for backward compatibility)
     if ($user == $useradm && $pass == decrypt($passadm)) {
       $_SESSION["mikpay"] = $user;
-      $_SESSION["user_role"] = 'admin';
       echo "<script>window.location='./admin.php?id=sessions'</script>";
       exit;
     }
     
-    // Login failed
     $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Invalid username or password.</div>';
   }
   
-
   include_once('./include/login.php');
 } elseif (!isset($_SESSION["mikpay"])) {
   echo "<script>window.location='./admin.php?id=login'</script>";
@@ -146,59 +90,7 @@ if ($id == "login" || substr($url, -1) == "p") {
 
 } elseif ($id == "sessions") {
   $_SESSION["connect"] = "";
-  
-  // Include database for user check
-  $dbLoaded = false;
-  try {
-    if (file_exists('./include/database.php')) {
-      include_once('./include/database.php');
-      $dbLoaded = true;
-    }
-  } catch (Exception $e) {
-    // Continue without database
-  }
-  
   include_once('./include/menu.php');
-  
-  // Check if user has routers configured
-  include('./include/config.php');
-  include('./include/readcfg.php');
-  
-  // If user from database and no routers, show welcome message
-  if ($dbLoaded && isset($_SESSION["user_id"])) {
-    $hasRouters = false;
-    if (isset($data) && is_array($data)) {
-      foreach ($data as $key => $val) {
-        if ($key != 'mikpay' && !empty($key)) {
-          $hasRouters = true;
-          break;
-        }
-      }
-    }
-    
-    if (!$hasRouters) {
-      // Show welcome message for new user
-      echo '<div class="main-container">';
-      echo '<div class="card">';
-      echo '<div class="card-header">';
-      echo '<h3><i class="fa fa-wifi"></i> Selamat Datang di MIKPAY</h3>';
-      echo '</div>';
-      echo '<div class="card-body" style="padding: 40px; text-align: center;">';
-      echo '<div style="font-size: 60px; color: #4D44B5; margin-bottom: 20px;"><i class="fa fa-wifi"></i></div>';
-      echo '<h2 style="color: #303972; margin-bottom: 15px;">Akun Anda Berhasil Diaktifkan!</h2>';
-      echo '<p style="color: #64748b; font-size: 16px; margin-bottom: 30px;">Anda mendapat trial 5 hari. Silakan tambahkan router MikroTik Anda untuk memulai.</p>';
-      echo '<a href="./admin.php?id=settings&router=new-' . rand(1111,9999) . '" class="btn bg-primary" style="padding: 15px 40px; font-size: 16px;">';
-      echo '<i class="fa fa-plus"></i> Tambah Router Pertama';
-      echo '</a>';
-      echo '</div>';
-      echo '</div>';
-      echo '</div>';
-      include('./include/info.php');
-      echo '</body></html>';
-      exit;
-    }
-  }
-  
   include_once('./settings/sessions.php');
   /*echo '
   <script type="text/javascript">
@@ -263,9 +155,6 @@ if ($id == "login" || substr($url, -1) == "p") {
 } elseif ($id == "subscription") {
   include_once('./include/menu.php');
   include_once('./settings/subscription.php');
-} elseif ($id == "users") {
-  include_once('./include/menu.php');
-  include_once('./admin/users.php');
 } elseif ($id == "logout") {
   include_once('./include/menu.php');
   echo "<b class='cl-w'><i class='fa fa-circle-o-notch fa-spin' style='font-size:24px'></i> Logout...</b>";

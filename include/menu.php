@@ -159,9 +159,6 @@ if (!isset($_SESSION["mikpay"])) {
   } elseif ($id == "subscription") {
     $ssubscription = "active";
     $mpage = "Langganan";
-  } elseif ($id == "users") {
-    $susers = "active";
-    $mpage = "User Management";
   } elseif ($id == "uplogo") {
     $suplogo = "active";
     $mpage = $_upload_logo;
@@ -464,7 +461,6 @@ include('./info.php');
     }
   }
   if ($isAdmin): ?>
-  <a href="./admin.php?id=users" class="menu <?= $susers ?? '' ?>"> <i class="fa fa-users"></i> User Management </a>
   <?php endif; ?>
   <a href="./?id=fonnte&session=<?= $session; ?>" class="menu <?= $sfonnte ?? '' ?>"> <i class="fa fa-whatsapp" style="color:#25D366;"></i> WhatsApp API </a>
   <a href="./?hotspot=uplogo&session=<?= $session; ?>" class="menu <?= $uplogo; ?>"> <i class="fa fa-upload "></i> <?= $_upload_logo ?> </a>

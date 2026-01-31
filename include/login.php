@@ -444,9 +444,6 @@ $loginLogo = getLogoPath('', './');
             <p class="login-footer-text">
                 Powered by <a href="#">MIKPAY</a> &copy; <?= date('Y') ?>
             </p>
-            <p class="login-footer-text" style="margin-top: 10px;">
-                Belum punya akun? <a href="./register.php" style="color: #fb923c; font-weight: 600;">Daftar di sini</a>
-            </p>
         </div>
     </div>
 </div>
