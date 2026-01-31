@@ -469,9 +469,9 @@ function deactivateUser($userId, $reason = '') {
  * Delete user
  */
 function deleteUser($userId) {
-    $users = getAllUsers();
+    $jsonUsers = getJsonUsers();
     $newUsers = array();
-    foreach ($users as $user) {
+    foreach ($jsonUsers as $user) {
         if ($user['id'] !== $userId) {
             $newUsers[] = $user;
         }
