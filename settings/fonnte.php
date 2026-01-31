@@ -28,6 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'auto_send_h3' => isset($_POST['auto_send_h3']),
             'auto_send_h0' => isset($_POST['auto_send_h0']),
             'auto_send_overdue' => isset($_POST['auto_send_overdue']),
+            // Schedule Settings
+            'schedule_enabled' => isset($_POST['schedule_enabled']),
+            'schedule_h3_time' => isset($_POST['schedule_h3_time']) ? trim($_POST['schedule_h3_time']) : '09:00',
+            'schedule_h0_time' => isset($_POST['schedule_h0_time']) ? trim($_POST['schedule_h0_time']) : '08:00',
+            'schedule_overdue_time' => isset($_POST['schedule_overdue_time']) ? trim($_POST['schedule_overdue_time']) : '10:00',
+            'schedule_days' => isset($_POST['schedule_days']) ? array_map('intval', $_POST['schedule_days']) : array(1,2,3,4,5,6,7),
+            'schedule_check_interval' => intval(isset($_POST['schedule_check_interval']) ? $_POST['schedule_check_interval'] : 30),
             // Anti-Spam Settings
             'antispam_enabled' => isset($_POST['antispam_enabled']),
             'antispam_delay_min' => intval(isset($_POST['antispam_delay_min']) ? $_POST['antispam_delay_min'] : 15),
@@ -599,6 +606,83 @@ $quota = getRemainingQuota();
                         
                         <small style="color:#94a3b8; display:block; margin-top:10px;">
                             <i class="fa fa-info-circle"></i> Pengiriman otomatis memerlukan cron job yang berjalan setiap hari
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Schedule Settings -->
+                <div class="fonnte-card" style="margin-top: 25px;">
+                    <div class="fonnte-card-header" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                        <i class="fa fa-calendar"></i> Jadwal Pengiriman
+                    </div>
+                    <div class="fonnte-card-body">
+                        <div class="form-group">
+                            <label class="form-switch">
+                                <input type="checkbox" name="schedule_enabled" id="scheduleEnabled" <?= (isset($settings['schedule_enabled']) ? $settings['schedule_enabled'] : true) ? 'checked' : '' ?>>
+                                <div class="switch-label">
+                                    <strong>Aktifkan Jadwal</strong>
+                                    <small>Atur waktu pengiriman reminder sesuai jadwal</small>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div id="scheduleSettings" style="margin-top: 20px;">
+                            <div class="form-group">
+                                <label><strong>Waktu Kirim H-3 (3 hari sebelum jatuh tempo)</strong></label>
+                                <input type="time" name="schedule_h3_time" value="<?= htmlspecialchars(isset($settings['schedule_h3_time']) ? $settings['schedule_h3_time'] : '09:00') ?>" class="form-control" style="width:200px;">
+                                <small style="color:#94a3b8;">Default: 09:00</small>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label><strong>Waktu Kirim Hari H (jatuh tempo hari ini)</strong></label>
+                                <input type="time" name="schedule_h0_time" value="<?= htmlspecialchars(isset($settings['schedule_h0_time']) ? $settings['schedule_h0_time'] : '08:00') ?>" class="form-control" style="width:200px;">
+                                <small style="color:#94a3b8;">Default: 08:00</small>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label><strong>Waktu Kirim Overdue (sudah lewat jatuh tempo)</strong></label>
+                                <input type="time" name="schedule_overdue_time" value="<?= htmlspecialchars(isset($settings['schedule_overdue_time']) ? $settings['schedule_overdue_time'] : '10:00') ?>" class="form-control" style="width:200px;">
+                                <small style="color:#94a3b8;">Default: 10:00</small>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label><strong>Hari Pengiriman</strong></label>
+                                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">
+                                    <?php
+                                    $days = array(
+                                        1 => 'Senin',
+                                        2 => 'Selasa',
+                                        3 => 'Rabu',
+                                        4 => 'Kamis',
+                                        5 => 'Jumat',
+                                        6 => 'Sabtu',
+                                        7 => 'Minggu'
+                                    );
+                                    $scheduleDays = isset($settings['schedule_days']) ? $settings['schedule_days'] : array(1,2,3,4,5,6,7);
+                                    foreach ($days as $dayNum => $dayName) {
+                                        $checked = in_array($dayNum, $scheduleDays) ? 'checked' : '';
+                                        echo "<label style='display:flex; align-items:center; gap:5px; cursor:pointer;'>";
+                                        echo "<input type='checkbox' name='schedule_days[]' value='$dayNum' $checked>";
+                                        echo "<span>$dayName</span>";
+                                        echo "</label>";
+                                    }
+                                    ?>
+                                </div>
+                                <small style="color:#94a3b8; display:block; margin-top:10px;">Pilih hari dalam seminggu untuk pengiriman reminder</small>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label><strong>Interval Cek (menit)</strong></label>
+                                <input type="number" name="schedule_check_interval" value="<?= htmlspecialchars(isset($settings['schedule_check_interval']) ? $settings['schedule_check_interval'] : 30) ?>" class="form-control" style="width:200px;" min="5" max="60">
+                                <small style="color:#94a3b8;">Rekomendasi: 30 menit. Atur cron job sesuai interval ini.</small>
+                            </div>
+                        </div>
+                        
+                        <small style="color:#94a3b8; display:block; margin-top:15px; padding:10px; background:#f1f5f9; border-radius:6px;">
+                            <i class="fa fa-info-circle"></i> <strong>Catatan:</strong><br>
+                            • Script akan cek jadwal setiap kali cron job berjalan<br>
+                            • Reminder akan dikirim jika waktu saat ini sesuai dengan jadwal (toleransi ±5 menit)<br>
+                            • Pastikan cron job berjalan sesuai interval yang diatur (contoh: setiap 30 menit)
                         </small>
                     </div>
                 </div>

@@ -40,6 +40,13 @@ function getDefaultFonnteSettings() {
         'auto_send_h3' => false,
         'auto_send_h0' => false,
         'auto_send_overdue' => false,
+        // Schedule Settings
+        'schedule_enabled' => true,
+        'schedule_h3_time' => '09:00',      // Jam untuk kirim H-3 (default: 09:00)
+        'schedule_h0_time' => '08:00',      // Jam untuk kirim H-0 (default: 08:00)
+        'schedule_overdue_time' => '10:00', // Jam untuk kirim Overdue (default: 10:00)
+        'schedule_days' => array(1,2,3,4,5,6,7), // Hari (1=Senin, 7=Minggu, semua hari)
+        'schedule_check_interval' => 30,    // Interval cek dalam menit (default: 30 menit)
         // Anti-Spam Settings
         'antispam_enabled' => true,
         'antispam_delay_min' => ANTISPAM_DELAY_MIN,
