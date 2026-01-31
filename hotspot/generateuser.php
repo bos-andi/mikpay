@@ -73,20 +73,30 @@ date_default_timezone_set($_SESSION['timezone']);
 		$datalimit = ($_POST['datalimit']);
 		$adcomment = ($_POST['adcomment']);
 		$mbgb = ($_POST['mbgb']);
-		if ($timelimit == "") {
-			$timelimit = "0";
+		// Validate and format timelimit
+		if ($timelimit == "" || $timelimit == "0") {
+			$timelimit = "";
 		} else {
-			$timelimit = $timelimit;
+			$timelimit = trim($timelimit);
 		}
-		if ($datalimit == "") {
-			$datalimit = "0";
+		
+		// Validate and format datalimit
+		if ($datalimit == "" || $datalimit == "0") {
+			$datalimit = "";
 		} else {
 			$datalimit = $datalimit * $mbgb;
 		}
+		
+		// Validate comment
 		if ($adcomment == "") {
 			$adcomment = "";
 		} else {
-			$adcomment = $adcomment;
+			$adcomment = trim($adcomment);
+		}
+		
+		// Validate server
+		if ($server == "" || $server == "all") {
+			$server = "all";
 		}
 		$getprofile = $API->comm("/ip/hotspot/user/profile/print", array("?name" => "$profile"));
 		$ponlogin = $getprofile[0]['on-login'];
@@ -138,15 +148,27 @@ date_default_timezone_set($_SESSION['timezone']);
 			}
 
 			for ($i = 1; $i <= $qty; $i++) {
-				$API->comm("/ip/hotspot/user/add", array(
+				// Build parameters array - only include non-empty values
+				$params = array(
 					"server" => "$server",
 					"name" => "$u[$i]",
 					"password" => "$p[$i]",
 					"profile" => "$profile",
-					"limit-uptime" => "$timelimit",
-					"limit-bytes-total" => "$datalimit",
+					"disabled" => "no",
 					"comment" => "$commt",
-				));
+				);
+				
+				// Only add limit-uptime if not empty
+				if ($timelimit != "" && $timelimit != "0") {
+					$params["limit-uptime"] = "$timelimit";
+				}
+				
+				// Only add limit-bytes-total if not empty
+				if ($datalimit != "" && $datalimit != "0") {
+					$params["limit-bytes-total"] = "$datalimit";
+				}
+				
+				$API->comm("/ip/hotspot/user/add", $params);
 			}
 		}
 
@@ -210,15 +232,27 @@ date_default_timezone_set($_SESSION['timezone']);
 
 			}
 			for ($i = 1; $i <= $qty; $i++) {
-				$API->comm("/ip/hotspot/user/add", array(
+				// Build parameters array - only include non-empty values
+				$params = array(
 					"server" => "$server",
 					"name" => "$u[$i]",
 					"password" => "$u[$i]",
 					"profile" => "$profile",
-					"limit-uptime" => "$timelimit",
-					"limit-bytes-total" => "$datalimit",
+					"disabled" => "no",
 					"comment" => "$commt",
-				));
+				);
+				
+				// Only add limit-uptime if not empty
+				if ($timelimit != "" && $timelimit != "0") {
+					$params["limit-uptime"] = "$timelimit";
+				}
+				
+				// Only add limit-bytes-total if not empty
+				if ($datalimit != "" && $datalimit != "0") {
+					$params["limit-bytes-total"] = "$datalimit";
+				}
+				
+				$API->comm("/ip/hotspot/user/add", $params);
 			}
 		}
 

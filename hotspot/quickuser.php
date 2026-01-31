@@ -112,15 +112,27 @@ $getquickprint = $API->comm("/system/script/print", array("?name" => "$quickprin
 			}
 
 			for ($i = 1; $i <= $qty; $i++) {
-				$API->comm("/ip/hotspot/user/add", array(
+				// Build parameters array - only include non-empty values
+				$params = array(
 					"server" => "$server",
 					"name" => "$u[$i]",
 					"password" => "$p[$i]",
 					"profile" => "$profile",
-					"limit-uptime" => "$timelimit",
-					"limit-bytes-total" => "$datalimit",
+					"disabled" => "no",
 					"comment" => "$commt",
-				));
+				);
+				
+				// Only add limit-uptime if not empty
+				if ($timelimit != "" && $timelimit != "0") {
+					$params["limit-uptime"] = "$timelimit";
+				}
+				
+				// Only add limit-bytes-total if not empty
+				if ($datalimit != "" && $datalimit != "0") {
+					$params["limit-bytes-total"] = "$datalimit";
+				}
+				
+				$API->comm("/ip/hotspot/user/add", $params);
 			}
 		}
 
@@ -184,15 +196,27 @@ $getquickprint = $API->comm("/system/script/print", array("?name" => "$quickprin
 
 			}
 			for ($i = 1; $i <= $qty; $i++) {
-				$API->comm("/ip/hotspot/user/add", array(
+				// Build parameters array - only include non-empty values
+				$params = array(
 					"server" => "$server",
 					"name" => "$u[$i]",
 					"password" => "$u[$i]",
 					"profile" => "$profile",
-					"limit-uptime" => "$timelimit",
-					"limit-bytes-total" => "$datalimit",
+					"disabled" => "no",
 					"comment" => "$commt",
-				));
+				);
+				
+				// Only add limit-uptime if not empty
+				if ($timelimit != "" && $timelimit != "0") {
+					$params["limit-uptime"] = "$timelimit";
+				}
+				
+				// Only add limit-bytes-total if not empty
+				if ($datalimit != "" && $datalimit != "0") {
+					$params["limit-bytes-total"] = "$datalimit";
+				}
+				
+				$API->comm("/ip/hotspot/user/add", $params);
 			}
 		}
 
