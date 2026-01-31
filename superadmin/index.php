@@ -75,14 +75,21 @@ if (isSuperAdmin()) {
         if (empty($password)) {
             $loginError = 'Password harus diisi!';
         } else {
+            // Set trial 5 hari
+            $trialStartDate = date('Y-m-d');
+            $trialEndDate = date('Y-m-d', strtotime('+5 days'));
+            
             $userData = array(
                 'id' => $userId,
                 'name' => trim($_POST['new_user_name']),
                 'email' => trim($_POST['new_user_email']),
                 'phone' => trim($_POST['new_user_phone']),
-                'package' => $_POST['new_user_package'],
+                'package' => 'trial', // Set to trial package
                 'password' => $password, // Store password (will be used for login)
                 'status' => 'active',
+                'subscription_start' => $trialStartDate,
+                'subscription_end' => $trialEndDate,
+                'subscription_status' => 'trial',
                 'notes' => trim($_POST['new_user_notes'])
             );
             saveUser($userId, $userData);
@@ -974,11 +981,12 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
                     </div>
                     <div class="form-group">
                         <label>Paket</label>
-                        <select name="new_user_package">
-                            <?php foreach ($packages as $key => $pkg): ?>
-                            <option value="<?= $key ?>"><?= $pkg['name'] ?> - Rp <?= number_format($pkg['price'], 0, ',', '.') ?>/bulan</option>
-                            <?php endforeach; ?>
+                        <select name="new_user_package" disabled>
+                            <option value="trial" selected>Trial 5 Hari (Otomatis)</option>
                         </select>
+                        <small style="color: #64748b; font-size: 12px; display: block; margin-top: 5px;">
+                            <i class="fa fa-info-circle"></i> User baru akan mendapatkan paket trial 5 hari secara otomatis
+                        </small>
                     </div>
                     <div class="form-group">
                         <label>Catatan</label>

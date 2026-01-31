@@ -155,6 +155,17 @@ if ($id == "login" || substr($url, -1) == "p") {
 } elseif ($id == "subscription") {
   include_once('./include/menu.php');
   include_once('./settings/subscription.php');
+} elseif ($id == "users") {
+  include_once('./include/menu.php');
+  include_once('./admin/users.php');
+} elseif ($id == "delete-user" && isset($_GET['user_id'])) {
+  include_once('./include/subscription.php');
+  $userId = $_GET['user_id'];
+  if (function_exists('deleteUser')) {
+    deleteUser($userId);
+  }
+  echo "<script>window.location='./admin.php?id=users&msg=deleted'</script>";
+  exit;
 } elseif ($id == "logout") {
   include_once('./include/menu.php');
   echo "<b class='cl-w'><i class='fa fa-circle-o-notch fa-spin' style='font-size:24px'></i> Logout...</b>";
