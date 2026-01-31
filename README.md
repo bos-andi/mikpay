@@ -23,10 +23,23 @@ Sistem manajemen untuk MikroTik Router yang mencakup Hotspot Management, PPP/PPP
 
 ## 🔧 Instalasi
 
+### 🚀 Deploy ke VPS (Recommended)
+
+Untuk deployment ke VPS, ikuti panduan lengkap di **[DEPLOY_VPS.md](DEPLOY_VPS.md)**
+
+Quick start dengan script otomatis:
+```bash
+wget https://raw.githubusercontent.com/bos-andi/mikpay/main/deploy/setup-vps.sh
+chmod +x setup-vps.sh
+sudo ./setup-vps.sh
+```
+
+### 💻 Instalasi Lokal
+
 ### 1. Clone atau Download Repository
 
 ```bash
-git clone https://github.com/yourusername/mikpay.git
+git clone https://github.com/bos-andi/mikpay.git
 cd mikpay
 ```
 
