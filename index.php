@@ -98,15 +98,46 @@ if (!isset($_SESSION["mikpay"])) {
     $themecolor = $_SESSION['themecolor'];
   }
 
-// routeros api
+// routeros api - with error handling
   include_once('./lib/routeros_api.class.php');
   include_once('./lib/formatbytesbites.php');
+  
+  // Check if session exists in config
+  if (!isset($data[$session]) || empty($data[$session])) {
+    // Session not found - redirect to sessions page
+    echo "<script>alert('Router session tidak ditemukan. Silakan tambahkan router terlebih dahulu.'); window.location='./admin.php?id=sessions'</script>";
+    exit;
+  }
+  
   $API = new RouterosAPI();
   $API->debug = false;
-  $API->connect($iphost, $userhost, decrypt($passwdhost));
-
-  $getidentity = $API->comm("/system/identity/print");
-  $identity = $getidentity[0]['name'];
+  
+  // Try to connect with error handling
+  $connected = false;
+  try {
+    $connected = $API->connect($iphost, $userhost, decrypt($passwdhost));
+    if ($connected) {
+      $_SESSION["connect"] = "<b class='text-green'>Connected</b>";
+    } else {
+      $_SESSION["connect"] = "<b class='text-red'>Not Connected</b>";
+    }
+  } catch (Exception $e) {
+    $_SESSION["connect"] = "<b class='text-red'>Connection Error</b>";
+    $connected = false;
+  }
+  
+  // Only get identity if connected
+  $identity = "Unknown";
+  if ($connected) {
+    try {
+      $getidentity = $API->comm("/system/identity/print");
+      if (isset($getidentity[0]['name'])) {
+        $identity = $getidentity[0]['name'];
+      }
+    } catch (Exception $e) {
+      // Continue with default identity
+    }
+  }
   
 
 // get variable
