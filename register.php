@@ -15,6 +15,7 @@ $success = '';
 
 // Include database with error handling
 $dbLoaded = false;
+$dbError = '';
 try {
     if (!file_exists('./include/database.php')) {
         throw new Exception('File database.php tidak ditemukan');
@@ -25,18 +26,26 @@ try {
         throw new Exception('Function registerUser tidak ditemukan');
     }
     
-    // Try to initialize database
+    // Try to initialize database (silent fail if database doesn't exist)
     if (function_exists('initDatabase')) {
         try {
             initDatabase();
         } catch (Exception $e) {
-            // Database might not exist yet, that's okay
+            // Database might not exist yet, try to create it
+            $dbError = 'Database belum dibuat. Silakan buat database "mikpay" terlebih dahulu.';
         }
     }
     
-    $dbLoaded = true;
+    // Test connection
+    try {
+        $testConn = getDBConnection();
+        $dbLoaded = true;
+    } catch (Exception $e) {
+        $dbError = $e->getMessage();
+        $dbLoaded = false;
+    }
 } catch (Exception $e) {
-    $error = 'Error loading database: ' . $e->getMessage();
+    $dbError = 'Error loading database: ' . $e->getMessage();
     $dbLoaded = false;
 }
 
@@ -81,7 +90,7 @@ if (isset($_POST['register'])) {
         } else {
             // Check if database is loaded
             if (!$dbLoaded || !function_exists('registerUser')) {
-                $error = 'Sistem registrasi belum siap. Pastikan database sudah dikonfigurasi dengan benar.';
+                $error = 'Sistem registrasi belum siap. ' . ($dbError ?: 'Pastikan database sudah dikonfigurasi dengan benar.');
             } else {
                 // Register user
                 try {

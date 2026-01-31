@@ -19,12 +19,19 @@ if (!defined('DB_HOST')) {
  */
 function getDBConnection() {
     static $conn = null;
+    static $error = null;
+    
+    // Return cached error if connection already failed
+    if ($error !== null) {
+        throw new Exception($error);
+    }
     
     if ($conn === null) {
         try {
             // Check if constants are defined
             if (!defined('DB_HOST') || !defined('DB_NAME') || !defined('DB_USER')) {
-                throw new PDOException('Database configuration tidak lengkap. Pastikan DB_HOST, DB_NAME, dan DB_USER sudah di-set.');
+                $error = 'Database configuration tidak lengkap. Edit include/database.php dan set DB_HOST, DB_NAME, DB_USER, DB_PASS.';
+                throw new Exception($error);
             }
             
             $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . (defined('DB_CHARSET') ? DB_CHARSET : 'utf8mb4');
@@ -32,13 +39,18 @@ function getDBConnection() {
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_TIMEOUT => 5, // 5 second timeout
             );
             
             $dbPass = defined('DB_PASS') ? DB_PASS : '';
             $conn = new PDO($dsn, DB_USER, $dbPass, $options);
         } catch (PDOException $e) {
-            // Don't die, return error message instead
-            throw new Exception("Database connection failed: " . $e->getMessage());
+            $errorMsg = "Database connection failed: " . $e->getMessage();
+            $error = $errorMsg;
+            throw new Exception($errorMsg);
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            throw $e;
         }
     }
     

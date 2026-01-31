@@ -75,10 +75,21 @@ if ($id == "login" || substr($url, -1) == "p") {
   try {
     if (file_exists('./include/database.php')) {
       include_once('./include/database.php');
-      $dbLoaded = function_exists('verifyUser');
+      // Test if database connection works
+      if (function_exists('verifyUser')) {
+        try {
+          // Try to get connection (will throw if database not configured)
+          $testConn = getDBConnection();
+          $dbLoaded = true;
+        } catch (Exception $e) {
+          // Database not configured, use old login
+          $dbLoaded = false;
+        }
+      }
     }
   } catch (Exception $e) {
     // Database not available, use old login
+    $dbLoaded = false;
   }
   
   if (isset($_POST['login'])) {
