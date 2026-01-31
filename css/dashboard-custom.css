@@ -1585,6 +1585,17 @@ body:not(.sidebar-closed) #main {
 .dashboard-panel-body {
     padding: 20px 25px;
     background: #FFFFFF;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+/* Exception for log containers that need scroll */
+.dashboard-panel-body .hotspot-log-container,
+.dashboard-panel-body .app-log-container {
+    overflow-y: auto !important;
+    max-height: inherit !important;
 }
 
 .dashboard-panel-modern .table {
