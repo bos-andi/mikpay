@@ -2435,13 +2435,26 @@ select.form-control {
 
 /* Quick Actions Panel */
 .quick-actions-panel {
-    height: 100%;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+}
+
+.quick-actions-panel .dashboard-panel-body {
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 20px !important;
 }
 
 .quick-actions-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+    width: 100%;
+    height: auto !important;
+    overflow: visible !important;
 }
 
 .quick-actions-grid.quick-actions-fullwidth {
@@ -2664,14 +2677,26 @@ select.form-control {
     
     .quick-actions-grid,
     .quick-actions-grid.quick-actions-fullwidth {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    .quick-actions-panel .dashboard-panel-body {
+        padding: 15px !important;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .quick-actions-grid,
+    .quick-actions-grid.quick-actions-fullwidth {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
     }
 }
 
 @media screen and (max-width: 576px) {
     .quick-actions-grid,
     .quick-actions-grid.quick-actions-fullwidth {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
     
     .quick-action-btn {
@@ -2682,5 +2707,9 @@ select.form-control {
         width: 42px;
         height: 42px;
         font-size: 18px;
+    }
+    
+    .quick-actions-panel .dashboard-panel-body {
+        padding: 12px !important;
     }
 }
