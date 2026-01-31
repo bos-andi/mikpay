@@ -70,18 +70,25 @@ if (isSuperAdmin()) {
     // Add new user
     if (isset($_POST['add_user'])) {
         $userId = trim($_POST['new_user_id']);
-        $userData = array(
-            'id' => $userId,
-            'name' => trim($_POST['new_user_name']),
-            'email' => trim($_POST['new_user_email']),
-            'phone' => trim($_POST['new_user_phone']),
-            'package' => $_POST['new_user_package'],
-            'status' => 'active',
-            'notes' => trim($_POST['new_user_notes'])
-        );
-        saveUser($userId, $userData);
-        header('Location: index.php?tab=users&msg=added');
-        exit;
+        $password = trim($_POST['new_user_password']);
+        
+        if (empty($password)) {
+            $loginError = 'Password harus diisi!';
+        } else {
+            $userData = array(
+                'id' => $userId,
+                'name' => trim($_POST['new_user_name']),
+                'email' => trim($_POST['new_user_email']),
+                'phone' => trim($_POST['new_user_phone']),
+                'package' => $_POST['new_user_package'],
+                'password' => $password, // Store password (will be used for login)
+                'status' => 'active',
+                'notes' => trim($_POST['new_user_notes'])
+            );
+            saveUser($userId, $userData);
+            header('Location: index.php?tab=users&msg=added');
+            exit;
+        }
     }
     // Update subscription manually
     if (isset($_POST['update_subscription'])) {
@@ -694,7 +701,7 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
         </a>
     </div>
     
-    <?php if (isset($_GET['msg'])): ?>
+    <?php if (isset($_GET['msg']) && empty($loginError)): ?>
     <div class="success-msg">
         <i class="fa fa-check-circle"></i> 
         <?php
@@ -710,6 +717,12 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
         );
         echo isset($messages[$_GET['msg']]) ? $messages[$_GET['msg']] : 'Aksi berhasil.';
         ?>
+    </div>
+    <?php endif; ?>
+    
+    <?php if (!empty($loginError) && !isset($_GET['msg'])): ?>
+    <div class="error-msg" style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px;">
+        <i class="fa fa-exclamation-circle"></i> <?= $loginError ?>
     </div>
     <?php endif; ?>
     
@@ -942,6 +955,10 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
                     <div class="form-group">
                         <label>ID User *</label>
                         <input type="text" name="new_user_id" placeholder="Contoh: user001" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password *</label>
+                        <input type="password" name="new_user_password" placeholder="Masukkan password" required>
                     </div>
                     <div class="form-group">
                         <label>Nama Lengkap</label>
