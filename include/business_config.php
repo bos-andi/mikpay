@@ -98,9 +98,10 @@ function getLogoPath($session = '', $basePath = './', $useSessionLogo = true) {
 /**
  * Get logo URL (absolute URL for use in popups/print pages)
  * @param string $session - Session/router name
+ * @param bool $useSessionLogo - If true, check for session-specific logo (for voucher/reports). If false, always use logo.png
  * @return array - ['exists' => bool, 'url' => string]
  */
-function getLogoUrl($session = '') {
+function getLogoUrl($session = '', $useSessionLogo = true) {
     $imgDir = __DIR__ . '/../img/';
     
     // Build base URL
@@ -114,20 +115,31 @@ function getLogoUrl($session = '') {
     
     $baseUrl = $protocol . "://" . $host . $basePath;
     
-    // Priority: 1. Session-specific logo, 2. Default logo.png
-    $sessionLogo = 'logo-' . $session . '.png';
-    $defaultLogo = 'logo.png';
-    
-    if (!empty($session) && file_exists($imgDir . $sessionLogo)) {
-        return array(
-            'exists' => true,
-            'url' => $baseUrl . '/img/' . $sessionLogo
-        );
-    } elseif (file_exists($imgDir . $defaultLogo)) {
-        return array(
-            'exists' => true,
-            'url' => $baseUrl . '/img/' . $defaultLogo
-        );
+    // For reports/voucher: Priority: 1. Session-specific logo, 2. Default logo.png
+    if ($useSessionLogo) {
+        $sessionLogo = 'logo-' . $session . '.png';
+        $defaultLogo = 'logo.png';
+        
+        if (!empty($session) && file_exists($imgDir . $sessionLogo)) {
+            return array(
+                'exists' => true,
+                'url' => $baseUrl . '/img/' . $sessionLogo
+            );
+        } elseif (file_exists($imgDir . $defaultLogo)) {
+            return array(
+                'exists' => true,
+                'url' => $baseUrl . '/img/' . $defaultLogo
+            );
+        }
+    } else {
+        // Always use logo.png
+        $defaultLogo = 'logo.png';
+        if (file_exists($imgDir . $defaultLogo)) {
+            return array(
+                'exists' => true,
+                'url' => $baseUrl . '/img/' . $defaultLogo
+            );
+        }
     }
     
     return array(
