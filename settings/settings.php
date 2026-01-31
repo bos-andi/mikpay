@@ -76,53 +76,11 @@ if (!isset($_SESSION["mikpay"])) {
 
     $replace = array('1' => "$sesname!$siphost", "$sesname@|@$suserhost", "$sesname#|#$spasswdhost", "$sesname%$shotspotname", "$sesname^$sdnsname", "$sesname&$scurrency", "$sesname*$sreload", "$sesname($siface", "$sesname)$sinfolp", "$sesname=$sidleto", "'$sesname'", "$sesname@!@$slivereport");
 
-    // Try to save to database if user is logged in via database
-    $savedToDb = false;
-    if (isset($_SESSION["user_id"])) {
-      try {
-        if (file_exists('./include/database.php')) {
-          include_once('./include/database.php');
-          if (function_exists('saveUserRouter') && function_exists('getDBConnection')) {
-            $testConn = getDBConnection();
-            if ($testConn) {
-              // Parse host and port
-              $hostParts = explode(':', $siphost);
-              $host = $hostParts[0];
-              $port = isset($hostParts[1]) ? intval($hostParts[1]) : 8728;
-              $fullHost = $siphost;
-              
-              // Save router to database
-              saveUserRouter(
-                $_SESSION["user_id"],
-                $sesname,
-                $shotspotname,
-                $fullHost,
-                $suserhost,
-                $spasswdhost,
-                $scurrency,
-                intval($sreload),
-                intval($siface),
-                intval($sidleto),
-                $sdnsname,
-                ($slivereport == 'enable' ? 'active' : 'inactive')
-              );
-              $savedToDb = true;
-            }
-          }
-        }
-      } catch (Exception $e) {
-        // Fallback to config.php
-      }
-    }
-    
-    // Fallback to config.php (backward compatibility)
-    if (!$savedToDb) {
-      for ($i = 1; $i < 15; $i++) {
-        $file = file("./include/config.php");
-        $content = file_get_contents("./include/config.php");
-        $newcontent = str_replace((string)$search[$i], (string)$replace[$i], "$content");
-        file_put_contents("./include/config.php", "$newcontent");
-      }
+    for ($i = 1; $i < 15; $i++) {
+      $file = file("./include/config.php");
+      $content = file_get_contents("./include/config.php");
+      $newcontent = str_replace((string)$search[$i], (string)$replace[$i], "$content");
+      file_put_contents("./include/config.php", "$newcontent");
     }
     
     $_SESSION["connect"] = "";
