@@ -159,7 +159,8 @@ $dashLogo = getLogoPath($session, './');
         <div class="time-section">
             <span id="timezone-display"><?= $timezone; ?></span> | 
             <span id="time-display"><?= $clock['time']; ?></span> | 
-            <span id="date-display"><?= ucfirst($clock['date']); ?></span>
+            <span id="date-display"><?= ucfirst($clock['date']); ?></span> |
+            <span id="uptime-display"><i class="fa fa-clock-o"></i> <?= formatDTM($resource['uptime']); ?></span>
         </div>
     </div>
 

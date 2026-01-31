@@ -1440,6 +1440,16 @@ body:not(.sidebar-closed) #main {
     font-weight: 500;
 }
 
+.dashboard-header-modern .time-section span#uptime-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dashboard-header-modern .time-section span#uptime-display i {
+    font-size: 12px;
+}
+
 /* Dashboard Cards - Akademi Widget Style */
 .dashboard-cards-modern {
     display: grid;
