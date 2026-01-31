@@ -177,6 +177,11 @@ if (isset($_POST['submit_payment'])) {
     cursor: not-allowed;
 }
 
+.btn-whatsapp:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4);
+}
+
 .btn-back {
     display: inline-block;
     padding: 12px 24px;
@@ -285,7 +290,7 @@ if (isset($_POST['submit_payment'])) {
                             <i class="fa fa-copy"></i>
                         </button>
                     </div>
-                    <p style="color: #64748b;">a.n. MUHAMMAD ANDI</p>
+                    <p style="color: #64748b;">a.n. Muhammad Andi</p>
                 </div>
                 <div class="payment-method">
                     <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
@@ -305,15 +310,22 @@ if (isset($_POST['submit_payment'])) {
             </div>
         </div>
         
-        <!-- Contact Info -->
-        <div class="payment-info-section" style="background: #f8fafc; padding: 20px; border-radius: 10px; margin-top: 20px;">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <i class="fa fa-whatsapp" style="font-size: 32px; color: #25D366;"></i>
-                <div>
-                    <h4 style="margin: 0 0 5px; color: #1e293b;">Konfirmasi Pembayaran</h4>
-                    <p style="margin: 0; color: #475569;">Kirim bukti transfer ke WhatsApp: <a href="https://wa.me/6285707004054?text=Halo%20Admin%2C%20saya%20sudah%20transfer%20untuk%20langganan%20MIKPAY" target="_blank" style="color: #4D44B5; font-weight: 600;">0857-0700-4054</a></p>
-                </div>
-            </div>
+        <!-- WhatsApp Confirmation Button -->
+        <div class="payment-info-section" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #16a34a; padding: 25px; border-radius: 12px; margin-top: 25px; text-align: center;">
+            <i class="fa fa-whatsapp" style="font-size: 48px; color: #25D366; margin-bottom: 15px;"></i>
+            <h4 style="margin: 0 0 10px; color: #166534; font-size: 20px;">Sudah Transfer?</h4>
+            <p style="margin: 0 0 20px; color: #475569; font-size: 14px;">Klik tombol di bawah untuk konfirmasi pembayaran via WhatsApp</p>
+            <?php
+            $packageName = $package['name'];
+            $packagePrice = number_format($package['price'], 0, ',', '.');
+            $whatsappMessage = urlencode("Halo Admin, saya sudah transfer untuk langganan MIKPAY\n\nPaket: " . $packageName . "\nNominal: Rp " . $packagePrice . "\n\nMohon segera diaktifkan. Terima kasih.");
+            $whatsappUrl = "https://wa.me/6285707004054?text=" . $whatsappMessage;
+            ?>
+            <a href="<?= $whatsappUrl ?>" target="_blank" class="btn-whatsapp" style="display: inline-flex; align-items: center; gap: 10px; padding: 15px 30px; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
+                <i class="fa fa-whatsapp" style="font-size: 20px;"></i>
+                Konfirmasi Pembayaran via WhatsApp
+            </a>
+            <p style="margin: 15px 0 0; color: #64748b; font-size: 12px;">Nomor WhatsApp: <strong>0857-0700-4054</strong></p>
         </div>
         
         <!-- Submit Payment Form -->
