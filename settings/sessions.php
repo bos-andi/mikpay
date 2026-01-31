@@ -30,6 +30,27 @@ if (!isset($_SESSION["mikpay"])) {
   // Include required files with error handling
   try {
     include('./include/config.php');
+        
+    // Try to load database for multi-user support
+    $dbLoaded = false;
+    $userId = null;
+    if (isset($_SESSION["user_id"])) {
+      try {
+        if (file_exists('./include/database.php')) {
+          include_once('./include/database.php');
+          if (function_exists('getDBConnection') && function_exists('getUserRouters')) {
+            $testConn = getDBConnection();
+            if ($testConn) {
+              $dbLoaded = true;
+              $userId = $_SESSION["user_id"];
+            }
+          }
+        }
+      } catch (Exception $e) {
+        // Database not available, use old system
+      }
+    }
+    
     include('./include/readcfg.php');
   } catch (Exception $e) {
     die("Error loading configuration: " . $e->getMessage());
@@ -804,29 +825,64 @@ if (!isset($_SESSION["mikpay"])) {
                 <div class="router-list">
                     <?php
                     $hasRouters = false;
-                    // Improved parsing: use regex to find valid session definitions
-                    $configFile = './include/config.php';
-                    if (file_exists($configFile)) {
-                        $configLines = file($configFile);
-                        foreach ($configLines as $line) {
-                            // Match pattern: $data['SESSION_NAME'] = array(
-                            if (preg_match("/\\\$data\['([^']+)'\]\s*=\s*array\s*\(/", $line, $matches)) {
-                                $value = $matches[1];
-                                // Skip admin config and empty values
-                                if ($value == "" || $value == "mikpay") {
-                                    continue;
-                                }
-                                // Check if session exists in $data array and has required fields
-                                if (isset($data[$value]) && is_array($data[$value]) && isset($data[$value][4])) {
-                                    $hasRouters = true;
-                                    // Safely extract router name
-                                    $routerName = "Unknown Router";
-                                    if (isset($data[$value][4]) && strpos($data[$value][4], '%') !== false) {
-                                        $nameParts = explode('%', $data[$value][4]);
-                                        if (isset($nameParts[1]) && !empty($nameParts[1])) {
-                                            $routerName = $nameParts[1];
-                                        }
+                    
+                    // Load routers from database if user is logged in via database
+                    if ($dbLoaded && $userId) {
+                        try {
+                            $userRouters = getUserRouters($userId);
+                            foreach ($userRouters as $router) {
+                                $hasRouters = true;
+                                $sessionName = $router['session_name'];
+                                $routerName = $router['router_name'] ?: 'Unknown Router';
+                    ?>
+                            <div class="router-card">
+                                <div class="router-icon connect" id="<?= htmlspecialchars($sessionName); ?>">
+                                    <i class="fa fa-server"></i>
+                                </div>
+                                <div class="router-info">
+                                    <h4><?= htmlspecialchars($routerName); ?></h4>
+                                    <span class="router-session">
+                                        <i class="fa fa-tag"></i> <?= htmlspecialchars($sessionName); ?>
+                                    </span>
+                                </div>
+                                <div class="router-actions">
+                                    <span class="router-btn btn-open connect" id="<?= htmlspecialchars($sessionName); ?>"><i class="fa fa-play"></i> <?= $_open ?></span>
+                                    <a class="router-btn btn-edit" href="./admin.php?id=settings&session=<?= htmlspecialchars($sessionName); ?>"><i class="fa fa-cog"></i> <?= $_edit ?></a>
+                                    <a class="router-btn btn-delete" href="javascript:void(0)" onclick="if(confirm('Are you sure to delete <?= htmlspecialchars($sessionName); ?>?')){loadpage('./admin.php?id=remove-session&session=<?= htmlspecialchars($sessionName); ?>')}"><i class="fa fa-trash"></i></a>
+                                </div>
+                            </div>
+                    <?php 
+                            }
+                        } catch (Exception $e) {
+                            // Fallback to config.php
+                        }
+                    }
+                    
+                    // Fallback to config.php (backward compatibility)
+                    if (!$hasRouters) {
+                        // Improved parsing: use regex to find valid session definitions
+                        $configFile = './include/config.php';
+                        if (file_exists($configFile)) {
+                            $configLines = file($configFile);
+                            foreach ($configLines as $line) {
+                                // Match pattern: $data['SESSION_NAME'] = array(
+                                if (preg_match("/\\\$data\['([^']+)'\]\s*=\s*array\s*\(/", $line, $matches)) {
+                                    $value = $matches[1];
+                                    // Skip admin config and empty values
+                                    if ($value == "" || $value == "mikpay") {
+                                        continue;
                                     }
+                                    // Check if session exists in $data array and has required fields
+                                    if (isset($data[$value]) && is_array($data[$value]) && isset($data[$value][4])) {
+                                        $hasRouters = true;
+                                        // Safely extract router name
+                                        $routerName = "Unknown Router";
+                                        if (isset($data[$value][4]) && strpos($data[$value][4], '%') !== false) {
+                                            $nameParts = explode('%', $data[$value][4]);
+                                            if (isset($nameParts[1]) && !empty($nameParts[1])) {
+                                                $routerName = $nameParts[1];
+                                            }
+                                        }
                     ?>
                             <div class="router-card">
                                 <div class="router-icon connect" id="<?= htmlspecialchars($value); ?>">
@@ -845,6 +901,7 @@ if (!isset($_SESSION["mikpay"])) {
                                 </div>
                             </div>
                     <?php 
+                                    }
                                 }
                             }
                         }

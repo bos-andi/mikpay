@@ -159,6 +159,9 @@ if (!isset($_SESSION["mikpay"])) {
   } elseif ($id == "subscription") {
     $ssubscription = "active";
     $mpage = "Langganan";
+  } elseif ($id == "users") {
+    $susers = "active";
+    $mpage = "User Management";
   } elseif ($id == "uplogo") {
     $suplogo = "active";
     $mpage = $_upload_logo;
