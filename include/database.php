@@ -22,16 +22,23 @@ function getDBConnection() {
     
     if ($conn === null) {
         try {
-            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+            // Check if constants are defined
+            if (!defined('DB_HOST') || !defined('DB_NAME') || !defined('DB_USER')) {
+                throw new PDOException('Database configuration tidak lengkap. Pastikan DB_HOST, DB_NAME, dan DB_USER sudah di-set.');
+            }
+            
+            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . (defined('DB_CHARSET') ? DB_CHARSET : 'utf8mb4');
             $options = array(
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             );
             
-            $conn = new PDO($dsn, DB_USER, DB_PASS, $options);
+            $dbPass = defined('DB_PASS') ? DB_PASS : '';
+            $conn = new PDO($dsn, DB_USER, $dbPass, $options);
         } catch (PDOException $e) {
-            die("Database connection failed: " . $e->getMessage());
+            // Don't die, return error message instead
+            throw new Exception("Database connection failed: " . $e->getMessage());
         }
     }
     
@@ -103,35 +110,53 @@ function initDatabase() {
  * Register new user
  */
 function registerUser($username, $password, $email = '', $fullName = '', $phone = '') {
-    $conn = getDBConnection();
-    
-    // Check if username exists
-    $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
-    $stmt->execute([$username]);
-    if ($stmt->fetch()) {
-        return array('success' => false, 'message' => 'Username sudah digunakan');
-    }
-    
-    // Hash password
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-    
-    // Set trial period (5 days)
-    $trialStart = date('Y-m-d');
-    $trialEnd = date('Y-m-d', strtotime('+5 days'));
-    
-    // Insert user
-    $stmt = $conn->prepare("INSERT INTO users (username, password, email, full_name, phone, trial_started, trial_ends, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'active')");
-    
     try {
+        $conn = getDBConnection();
+        
+        // Check if username exists
+        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+        $stmt->execute([$username]);
+        if ($stmt->fetch()) {
+            return array('success' => false, 'message' => 'Username sudah digunakan');
+        }
+        
+        // Hash password
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        if ($hashedPassword === false) {
+            return array('success' => false, 'message' => 'Gagal mengenkripsi password');
+        }
+        
+        // Set trial period (5 days)
+        $trialStart = date('Y-m-d');
+        $trialEnd = date('Y-m-d', strtotime('+5 days'));
+        
+        // Insert user
+        $stmt = $conn->prepare("INSERT INTO users (username, password, email, full_name, phone, trial_started, trial_ends, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'active')");
+        
         $stmt->execute([$username, $hashedPassword, $email, $fullName, $phone, $trialStart, $trialEnd]);
         $userId = $conn->lastInsertId();
         
+        if (!$userId) {
+            return array('success' => false, 'message' => 'Gagal membuat user');
+        }
+        
         // Create subscription for trial
-        createUserSubscription($userId, 'trial', 5);
+        if (function_exists('createUserSubscription')) {
+            createUserSubscription($userId, 'trial', 5);
+        }
         
         return array('success' => true, 'message' => 'Registrasi berhasil', 'user_id' => $userId);
     } catch (PDOException $e) {
-        return array('success' => false, 'message' => 'Gagal registrasi: ' . $e->getMessage());
+        // Return user-friendly error message
+        $errorMsg = 'Gagal registrasi';
+        if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+            $errorMsg = 'Username sudah digunakan';
+        } elseif (strpos($e->getMessage(), 'Connection') !== false) {
+            $errorMsg = 'Koneksi database gagal. Silakan hubungi administrator.';
+        }
+        return array('success' => false, 'message' => $errorMsg);
+    } catch (Exception $e) {
+        return array('success' => false, 'message' => 'Error: ' . $e->getMessage());
     }
 }
 

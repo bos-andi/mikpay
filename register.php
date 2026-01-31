@@ -4,46 +4,106 @@
  * Halaman registrasi untuk user baru
  */
 session_start();
-error_reporting(0);
-
-// Include database
-include_once('./include/database.php');
-include_once('./include/business_config.php');
+// Enable error reporting for debugging (disable in production)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 $error = '';
 $success = '';
 
-// Handle registration
-if (isset($_POST['register'])) {
-    $username = trim($_POST['username']);
-    $password = $_POST['password'];
-    $confirmPassword = $_POST['confirm_password'];
-    $email = trim($_POST['email']);
-    $fullName = trim($_POST['full_name']);
-    $phone = trim($_POST['phone']);
+// Include database with error handling
+$dbLoaded = false;
+try {
+    if (!file_exists('./include/database.php')) {
+        throw new Exception('File database.php tidak ditemukan');
+    }
+    include_once('./include/database.php');
     
-    // Validation
-    if (empty($username) || empty($password)) {
-        $error = 'Username dan password harus diisi';
-    } elseif (strlen($username) < 3) {
-        $error = 'Username minimal 3 karakter';
-    } elseif (strlen($password) < 6) {
-        $error = 'Password minimal 6 karakter';
-    } elseif ($password !== $confirmPassword) {
-        $error = 'Password dan konfirmasi password tidak sama';
-    } else {
-        // Register user
-        $result = registerUser($username, $password, $email, $fullName, $phone);
-        
-        if ($result['success']) {
-            $success = 'Registrasi berhasil! Anda mendapat trial 5 hari. Silakan login.';
-        } else {
-            $error = $result['message'];
+    if (!function_exists('registerUser')) {
+        throw new Exception('Function registerUser tidak ditemukan');
+    }
+    
+    // Try to initialize database
+    if (function_exists('initDatabase')) {
+        try {
+            initDatabase();
+        } catch (Exception $e) {
+            // Database might not exist yet, that's okay
         }
+    }
+    
+    $dbLoaded = true;
+} catch (Exception $e) {
+    $error = 'Error loading database: ' . $e->getMessage();
+    $dbLoaded = false;
+}
+
+// Include business config with error handling
+try {
+    if (file_exists('./include/business_config.php')) {
+        include_once('./include/business_config.php');
+    }
+} catch (Exception $e) {
+    // Business config is optional, continue
+}
+
+// Get logo path safely
+$loginLogo = array('exists' => false, 'path' => '');
+if (function_exists('getLogoPath')) {
+    try {
+        $loginLogo = getLogoPath('', './');
+    } catch (Exception $e) {
+        // Use default
     }
 }
 
-$loginLogo = getLogoPath('', './');
+// Handle registration
+if (isset($_POST['register'])) {
+    try {
+        $username = trim($_POST['username']);
+        $password = $_POST['password'];
+        $confirmPassword = $_POST['confirm_password'];
+        $email = trim($_POST['email']);
+        $fullName = trim($_POST['full_name']);
+        $phone = trim($_POST['phone']);
+        
+        // Validation
+        if (empty($username) || empty($password)) {
+            $error = 'Username dan password harus diisi';
+        } elseif (strlen($username) < 3) {
+            $error = 'Username minimal 3 karakter';
+        } elseif (strlen($password) < 6) {
+            $error = 'Password minimal 6 karakter';
+        } elseif ($password !== $confirmPassword) {
+            $error = 'Password dan konfirmasi password tidak sama';
+        } else {
+            // Check if database is loaded
+            if (!$dbLoaded || !function_exists('registerUser')) {
+                $error = 'Sistem registrasi belum siap. Pastikan database sudah dikonfigurasi dengan benar.';
+            } else {
+                // Register user
+                try {
+                    $result = registerUser($username, $password, $email, $fullName, $phone);
+                    
+                    if ($result && isset($result['success']) && $result['success']) {
+                        $success = 'Registrasi berhasil! Anda mendapat trial 5 hari. Silakan login.';
+                        // Clear form data
+                        $_POST = array();
+                    } else {
+                        $error = isset($result['message']) ? $result['message'] : 'Gagal melakukan registrasi. Silakan coba lagi.';
+                    }
+                } catch (Exception $e) {
+                    $error = 'Error saat registrasi: ' . $e->getMessage();
+                }
+            }
+        }
+    } catch (Exception $e) {
+        $error = 'Error: ' . $e->getMessage();
+    } catch (Error $e) {
+        $error = 'Fatal Error: ' . $e->getMessage();
+    }
+}
 ?>
 <!DOCTYPE html>
 <html>
