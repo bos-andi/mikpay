@@ -183,7 +183,7 @@ if($idleto != "disable"){
 <?php if ($id != "") { ?>
 
 <div id="navbar" class="navbar">
-  <?php $logoInfo = getLogoPath($session, './'); ?>
+  <?php $logoInfo = getLogoPath($session, './', false); ?>
   <div class="navbar-left">
     <div id="brand" class="brand-container">
       <a href="javascript:void(0)" class="brand-link">
@@ -311,7 +311,7 @@ include('./info.php');
 } else { ?>
 
 <div id="navbar" class="navbar">
-  <?php $logoInfo2 = getLogoPath($session, './'); ?>
+  <?php $logoInfo2 = getLogoPath($session, './', false); ?>
   <div class="navbar-left">
     <div id="brand" class="brand-container">
       <a href="./?session=<?= $session; ?>" class="brand-link">

@@ -18,7 +18,7 @@
 session_start();
 
 include_once('./include/business_config.php');
-$loginLogo = getLogoPath('', './');
+$loginLogo = getLogoPath('', './', false);
 ?>
 
 <style>

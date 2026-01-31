@@ -47,12 +47,30 @@ function getBusinessName() {
  * Get logo path for a session
  * @param string $session - Session/router name
  * @param string $basePath - Base path prefix (e.g., './', '../', or absolute)
+ * @param bool $useSessionLogo - If true, check for session-specific logo (for voucher/reports). If false, always use logo.png (for dashboard/navbar)
  * @return array - ['exists' => bool, 'path' => string, 'url' => string]
  */
-function getLogoPath($session = '', $basePath = './') {
+function getLogoPath($session = '', $basePath = './', $useSessionLogo = true) {
     $imgDir = __DIR__ . '/../img/';
     
-    // Priority: 1. Session-specific logo, 2. Default logo.png
+    // For dashboard/navbar: always use logo.png
+    if (!$useSessionLogo) {
+        $defaultLogo = 'logo.png';
+        if (file_exists($imgDir . $defaultLogo)) {
+            return array(
+                'exists' => true,
+                'file' => $defaultLogo,
+                'path' => $basePath . 'img/' . $defaultLogo
+            );
+        }
+        return array(
+            'exists' => false,
+            'file' => '',
+            'path' => ''
+        );
+    }
+    
+    // For voucher/reports: Priority: 1. Session-specific logo, 2. Default logo.png
     $sessionLogo = 'logo-' . $session . '.png';
     $defaultLogo = 'logo.png';
     

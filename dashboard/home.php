@@ -23,7 +23,7 @@ if (!isset($_SESSION["mikpay"])) {
 } else {
 
 include_once('./include/business_config.php');
-$dashLogo = getLogoPath($session, './');
+$dashLogo = getLogoPath($session, './', false);
 
 // get MikroTik system clock
   $getclock = $API->comm("/system/clock/print");

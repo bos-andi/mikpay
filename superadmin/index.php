@@ -9,7 +9,7 @@ include('../include/superadmin.php');
 include('../include/subscription.php');
 include('../include/business_config.php');
 
-$adminLogo = getLogoPath('', '../');
+$adminLogo = getLogoPath('', '../', false);
 
 // Handle logout
 if (isset($_GET['logout'])) {
