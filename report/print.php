@@ -39,10 +39,14 @@ if (!isset($_SESSION["mikpay"])) {
   $API = new RouterosAPI();
   $API->debug = false;
 
-	$idhr = $_GET['idhr'];
-	$idbl = $_GET['idbl'];
-	$idbl2 = explode("/",$idhr)[0].explode("/",$idhr)[2];
+	$idhr = isset($_GET['idhr']) ? $_GET['idhr'] : '';
+	$idbl = isset($_GET['idbl']) ? $_GET['idbl'] : '';
+	$idbl2 = '';
 	if ($idhr != ""){
+		$idhrParts = explode("/", $idhr);
+		if (count($idhrParts) >= 3) {
+			$idbl2 = $idhrParts[0] . $idhrParts[2];
+		}
 		$_SESSION['report'] = "&idhr=".$idhr;
 	} elseif ($idbl != ""){
 		$_SESSION['report'] = "&idbl=".$idbl;
@@ -50,20 +54,30 @@ if (!isset($_SESSION["mikpay"])) {
 		$_SESSION['report'] = "";
 	}
 	$_SESSION['idbl'] = $idbl;
-	$remdata = ($_POST['remdata']);
-	$prefix = $_GET['prefix'];
-	$fcomment = $_GET['comment'];
-	$range = $_GET['range'];
-	if(!empty($range)){$trange = "[".$range."]";}
+	$remdata = isset($_POST['remdata']) ? $_POST['remdata'] : '';
+	$prefix = isset($_GET['prefix']) ? $_GET['prefix'] : '';
+	$fcomment = isset($_GET['comment']) ? $_GET['comment'] : '';
+	$range = isset($_GET['range']) ? $_GET['range'] : '';
+	if(!empty($range)){$trange = "[".$range."]";} else {$trange = "";}
 	
 	$pcomment = substr($prefix, 0,2);
 	if($pcomment == "!!"){
 		$fcomment = explode("!!",$prefix)[1];
 	}else{$fcomment = $fcomment;}
 
-	$gettimezone = $API->comm("/system/clock/print");
-	$timezone = $gettimezone[0]['time-zone-name'];
-	date_default_timezone_set($timezone);
+	// Connect to router first before getting timezone
+	if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
+		$gettimezone = $API->comm("/system/clock/print");
+		if (isset($gettimezone[0]['time-zone-name'])) {
+			$timezone = $gettimezone[0]['time-zone-name'];
+			date_default_timezone_set($timezone);
+		} else {
+			date_default_timezone_set('Asia/Jakarta');
+		}
+		$API->disconnect();
+	} else {
+		date_default_timezone_set('Asia/Jakarta');
+	}
 
 	if (isset($remdata)) {
 		if (strlen($idhr) > "0") {
@@ -104,46 +118,45 @@ if (!isset($_SESSION["mikpay"])) {
 	} else {
 		$fprefix = "";
 	}
-	if (strlen($idhr) > "0") {
+	$getData = array();
+	$TotalReg = 0;
+	$filedownload = "all";
+	$shf = "text";
+	$shd = "none";
+	
+	if (strlen($idhr) > 0) {
 		if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
 			$getData = $API->comm("/system/script/print", array(
 				"?source" => "$idhr",
 			));
-			$TotalReg = count($getData);
+			$TotalReg = is_array($getData) ? count($getData) : 0;
+			$API->disconnect();
 		}
 		$filedownload = $idhr;
 		$shf = "hidden";
 		$shd = "inline-block";
-	} elseif (strlen($idbl) > "0") {
+	} elseif (strlen($idbl) > 0) {
 		if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
 			$getData = $API->comm("/system/script/print", array(
 				"?owner" => "$idbl",
 			));
-			$TotalReg = count($getData);
+			$TotalReg = is_array($getData) ? count($getData) : 0;
+			$API->disconnect();
 		}
 		$filedownload = $idbl;
 		$shf = "hidden";
 		$shd = "inline-block";
-	} elseif ($idhr == "" || $idbl == "") {
+	} else {
 		if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
 			$getData = $API->comm("/system/script/print", array(
 				"?comment" => "mikpay",
 			));
-			$TotalReg = count($getData);
+			$TotalReg = is_array($getData) ? count($getData) : 0;
+			$API->disconnect();
 		}
 		$filedownload = "all";
 		$shf = "text";
 		$shd = "none";
-	} elseif (strlen($idbl) > "0" ) {
-		if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
-			$getData = $API->comm("/system/script/print", array(
-				"?owner" => "$idbl",
-			));
-			$TotalReg = count($getData);
-		}
-		$filedownload = $idbl;
-		$shf = "hidden";
-		$shd = "inline-block";
 	}
 	
 }
