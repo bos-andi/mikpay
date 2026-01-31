@@ -29,22 +29,45 @@ $url = $_SERVER['REQUEST_URI'];
 
 $session = $_GET['session'];
 
+// Include database for multi-user support
+include_once('./include/database.php');
+
 if (!isset($_SESSION["mikpay"])) {
   header("Location:./admin.php?id=login");
+  exit;
 } elseif (empty($session)) {
   echo "<script>window.location='./admin.php?id=sessions'</script>";
+  exit;
 } else {
   $_SESSION["$session"] = $session;
   $setsession = $_SESSION["$session"];
 
   $_SESSION["connect"] = "";
 
-// Check if user/session is active
-  include_once('./include/subscription.php');
-  if (!isUserActive($session)) {
-    // User is deactivated - show blocked page
-    include('./blocked.php');
-    exit;
+  // Check if user is active (from database)
+  if (isset($_SESSION["user_id"])) {
+    $userId = $_SESSION["user_id"];
+    $dbUser = getUserById($userId);
+    
+    if (!$dbUser || $dbUser['status'] !== 'active') {
+      // User is inactive or suspended
+      include('./blocked.php');
+      exit;
+    }
+    
+    // Check subscription
+    if (!isUserSubscriptionActive($userId)) {
+      // Subscription expired - redirect to subscription
+      echo "<script>window.location='./?id=subscription&session=" . $session . "'</script>";
+      exit;
+    }
+  } else {
+    // Fallback to old subscription system
+    include_once('./include/subscription.php');
+    if (!isUserActive($session)) {
+      include('./blocked.php');
+      exit;
+    }
   }
 
 // time zone

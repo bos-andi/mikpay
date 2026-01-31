@@ -70,17 +70,44 @@ include_once('./lib/formatbytesbites.php');
 <?php
 if ($id == "login" || substr($url, -1) == "p") {
 
+  // Include database for multi-user login
+  include_once('./include/database.php');
+  
   if (isset($_POST['login'])) {
     $user = $_POST['user'];
     $pass = $_POST['pass'];
+    
+    // Try database login first
+    $dbUser = verifyUser($user, $pass);
+    
+    if ($dbUser) {
+      // Database user login successful
+      $_SESSION["mikpay"] = $user;
+      $_SESSION["user_id"] = $dbUser['id'];
+      $_SESSION["user_role"] = $dbUser['role'];
+      $_SESSION["user_username"] = $dbUser['username'];
+      
+      // Check subscription
+      if (!isUserSubscriptionActive($dbUser['id'])) {
+        // Subscription expired - redirect to subscription page
+        echo "<script>window.location='./?id=subscription&session=" . $user . "'</script>";
+        exit;
+      }
+      
+      echo "<script>window.location='./admin.php?id=sessions'</script>";
+      exit;
+    }
+    
+    // Fallback to old admin login (for backward compatibility)
     if ($user == $useradm && $pass == decrypt($passadm)) {
       $_SESSION["mikpay"] = $user;
-
-        echo "<script>window.location='./admin.php?id=sessions'</script>";
-    
-    } else {
-      $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Invalid username or password.</div>';
+      $_SESSION["user_role"] = 'admin';
+      echo "<script>window.location='./admin.php?id=sessions'</script>";
+      exit;
     }
+    
+    // Login failed
+    $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Invalid username or password.</div>';
   }
   
 
@@ -157,6 +184,9 @@ if ($id == "login" || substr($url, -1) == "p") {
 } elseif ($id == "subscription") {
   include_once('./include/menu.php');
   include_once('./settings/subscription.php');
+} elseif ($id == "users") {
+  include_once('./include/menu.php');
+  include_once('./admin/users.php');
 } elseif ($id == "logout") {
   include_once('./include/menu.php');
   echo "<b class='cl-w'><i class='fa fa-circle-o-notch fa-spin' style='font-size:24px'></i> Logout...</b>";

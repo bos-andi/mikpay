@@ -159,6 +159,9 @@ if (!isset($_SESSION["mikpay"])) {
   } elseif ($id == "subscription") {
     $ssubscription = "active";
     $mpage = "Langganan";
+  } elseif ($id == "users") {
+    $susers = "active";
+    $mpage = "User Management";
   } elseif ($id == "uplogo") {
     $suplogo = "active";
     $mpage = $_upload_logo;
@@ -448,6 +451,21 @@ include('./info.php');
   <div class="dropdown-container <?= $settmenu; ?>">
   <a href="./admin.php?id=settings&session=<?= $session; ?>" class="menu "> <i class="fa fa-gear "></i> <?= $_session_settings ?> </a>
   <a href="./admin.php?id=sessions" class="menu "> <i class="fa fa-gear "></i> <?= $_admin_settings ?> </a>
+  <?php 
+  // Check if user is admin
+  $isAdmin = false;
+  if (isset($_SESSION["user_role"]) && $_SESSION["user_role"] == 'admin') {
+    $isAdmin = true;
+  } elseif (isset($_SESSION["mikpay"])) {
+    include('../include/config.php');
+    include('../include/readcfg.php');
+    if ($_SESSION["mikpay"] == $useradm) {
+      $isAdmin = true;
+    }
+  }
+  if ($isAdmin): ?>
+  <a href="./admin.php?id=users" class="menu <?= $susers ?? '' ?>"> <i class="fa fa-users"></i> User Management </a>
+  <?php endif; ?>
   <a href="./?id=fonnte&session=<?= $session; ?>" class="menu <?= $sfonnte ?? '' ?>"> <i class="fa fa-whatsapp" style="color:#25D366;"></i> WhatsApp API </a>
   <a href="./?hotspot=uplogo&session=<?= $session; ?>" class="menu <?= $uplogo; ?>"> <i class="fa fa-upload "></i> <?= $_upload_logo ?> </a>
   <a href="./?hotspot=template-editor&template=default&session=<?= $session; ?>" class="menu <?= $teditor; ?>"> <i class="fa fa-edit "></i> <?= $_template_editor ?> </a>          
