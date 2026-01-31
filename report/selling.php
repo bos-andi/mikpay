@@ -272,15 +272,162 @@ $(document).ready(function(){
 }
 .report-total-card h4 { margin: 0; font-size: 14px; opacity: 0.9; }
 .report-total-card p { margin: 5px 0 0; font-size: 28px; font-weight: 700; }
+
+/* ========================================
+   TABLE LAYOUT FIX - Report Selling
+   ======================================== */
+
+/* Card body - ensure full width and proper padding */
+.report-selling .card-body {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+}
+
+/* Table responsive wrapper - Desktop: fit content, Mobile: scroll */
+.report-selling .table-responsive {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Desktop: Table should fit naturally without horizontal scroll */
+@media (min-width: 992px) {
+    .report-selling .table-responsive {
+        overflow-x: visible !important;
+    }
+    
+    .report-selling .table {
+        width: 100% !important;
+        table-layout: auto !important;
+        min-width: 100% !important;
+    }
+}
+
+/* Mobile: Allow horizontal scroll */
+@media (max-width: 991px) {
+    .report-selling .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    
+    .report-selling .table {
+        min-width: 800px !important;
+        width: auto !important;
+    }
+}
+
+/* Table styling - ensure proper column widths */
+.report-selling .table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 0 !important;
+    background: #FFFFFF !important;
+}
+
+/* Table header - sticky and aligned */
+.report-selling .table thead {
+    background: #4D44B5 !important;
+    position: relative !important;
+}
+
+.report-selling .table thead th {
+    color: #FFFFFF !important;
+    font-weight: 500 !important;
+    padding: 12px 15px !important;
+    border: none !important;
+    font-size: 13px !important;
+    white-space: nowrap !important;
+    text-align: left !important;
+    vertical-align: middle !important;
+}
+
+/* Column width optimization */
+.report-selling .table thead th:first-child,
+.report-selling .table tbody td:first-child {
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+    text-align: center !important;
+}
+
+.report-selling .table thead th:nth-child(2),
+.report-selling .table tbody td:nth-child(2) {
+    width: 100px !important;
+    min-width: 100px !important;
+}
+
+.report-selling .table thead th:nth-child(3),
+.report-selling .table tbody td:nth-child(3) {
+    width: 80px !important;
+    min-width: 80px !important;
+}
+
+.report-selling .table thead th:nth-child(4),
+.report-selling .table tbody td:nth-child(4) {
+    width: 120px !important;
+    min-width: 120px !important;
+}
+
+.report-selling .table thead th:nth-child(5),
+.report-selling .table tbody td:nth-child(5) {
+    width: 100px !important;
+    min-width: 100px !important;
+}
+
+.report-selling .table thead th:nth-child(6),
+.report-selling .table tbody td:nth-child(6) {
+    width: auto !important;
+    min-width: 150px !important;
+}
+
+.report-selling .table thead th:last-child,
+.report-selling .table tbody td:last-child {
+    width: 100px !important;
+    min-width: 100px !important;
+    text-align: right !important;
+}
+
+/* Table body - ensure alignment with header */
+.report-selling .table tbody td {
+    padding: 10px 15px !important;
+    border: none !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    color: #303972 !important;
+    vertical-align: middle !important;
+    font-size: 13px !important;
+    white-space: nowrap !important;
+}
+
+.report-selling .table tbody tr:hover {
+    background: #f8f9ff !important;
+}
+
+.report-selling .table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* Ensure header and body columns align */
+.report-selling .table thead th,
+.report-selling .table tbody td {
+    box-sizing: border-box !important;
+}
 </style>
 
-<div class="card">
+<div class="card report-selling">
     <div class="card-header">
         <h3><i class="fa fa-money"></i> <?= $_selling_report ?> <?= ucfirst($idhr) . ucfirst(substr($idbl,0,3).' '.substr($idbl,3,5)); if ($prefix != "") {echo " prefix [" . $prefix . "]";} ?>
         <small id="loader" style="display: none;"><i class='fa fa-circle-o-notch fa-spin'></i> <?= $_processing ?></small>
         </h3>
     </div>
-    <div class="card-body" style="padding: 20px;">
+    <div class="card-body">
         
         <!-- Toolbar -->
         <div class="report-toolbar">
