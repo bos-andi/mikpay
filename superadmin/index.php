@@ -901,8 +901,9 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
                 <?php 
                 include_once('../lib/routeros_api.class.php');
                 foreach ($users as $user): 
-                    // Get password for config.php users
+                    // Get password and username for config.php users
                     $displayPassword = '-';
+                    $displayUsername = '-';
                     $passwordVisible = false;
                     if (isset($user['source']) && $user['source'] == 'config') {
                         // Load from config.php
@@ -914,12 +915,17 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
                             $userhost = explode('@|@', $data[$session][2])[1];
                             $passwdhost = explode('#|#', $data[$session][3])[1];
                             $displayPassword = decrypt($passwdhost);
+                            $displayUsername = $userhost;
                             $passwordVisible = true;
                         }
                     } elseif (isset($user['password'])) {
                         // From JSON users
                         $displayPassword = $user['password'];
+                        $displayUsername = isset($user['username']) ? $user['username'] : (isset($user['id']) ? $user['id'] : '-');
                         $passwordVisible = true;
+                    } else {
+                        // Try to get username from user data even if no password
+                        $displayUsername = isset($user['username']) ? $user['username'] : (isset($user['id']) ? $user['id'] : '-');
                     }
                 ?>
                 <tr>
