@@ -1386,9 +1386,6 @@ if (file_exists($fonnteFile)) {
                download>
                 <i class="fa fa-file-excel-o"></i> Template CSV
             </a>
-            <button class="btn-action btn-import" onclick="showImportModal()" title="Import Data dari CSV">
-                <i class="fa fa-upload"></i> Import CSV
-            </button>
             <button class="btn-action btn-send-wa" onclick="showBulkWAModal()" title="Kirim WA Massal">
                 <i class="fa fa-whatsapp"></i>
             </button>
@@ -1486,38 +1483,6 @@ if (file_exists($fonnteFile)) {
             <?php endforeach; ?>
         </tbody>
     </table>
-</div>
-
-<!-- Import Excel Modal -->
-<div class="wa-template-modal" id="importModal">
-    <div class="wa-template-content" style="max-width: 500px;">
-        <h4><i class="fa fa-upload" style="color:#f59e0b"></i> Import Data dari CSV</h4>
-        <p style="color:#64748b; font-size:13px; margin-bottom:15px;">
-            Upload file CSV yang sudah diisi (hasil dari tombol Template CSV) untuk mengupdate data pelanggan.
-        </p>
-        <form id="importForm" enctype="multipart/form-data">
-            <input type="hidden" name="session" value="<?= $session ?>">
-            <div class="form-group">
-                <label>Pilih File CSV</label>
-                <input type="file" name="excel_file" id="excelFile" accept=".csv" required style="width:100%; padding:10px; border:2px solid #e2e8f0; border-radius:8px;">
-                <small style="color:#64748b; font-size:12px; margin-top:5px; display:block;">
-                    Format resmi: CSV (.csv) dari tombol Template CSV. Maksimal 5MB.
-                </small>
-            </div>
-            <div id="importProgress" style="display:none; margin:15px 0;">
-                <div style="background:#f1f5f9; border-radius:8px; padding:10px; text-align:center;">
-                    <i class="fa fa-spinner fa-spin"></i> Mengupload dan memproses file...
-                </div>
-            </div>
-            <div id="importResult" style="display:none; margin:15px 0; padding:15px; border-radius:8px;"></div>
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-                <button type="button" class="btn-secondary" onclick="closeImportModal()">Tutup</button>
-                <button type="submit" class="btn-primary" id="importSubmitBtn">
-                    <i class="fa fa-upload"></i> Upload & Import
-                </button>
-            </div>
-        </form>
-    </div>
 </div>
 
 <!-- WhatsApp Template Modal -->
