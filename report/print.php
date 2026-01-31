@@ -118,18 +118,12 @@ if (!isset($_SESSION["mikpay"])) {
 	} else {
 		$fprefix = "";
 	}
-	$getData = array();
-	$TotalReg = 0;
-	$filedownload = "all";
-	$shf = "text";
-	$shd = "none";
-	
 	if (strlen($idhr) > 0) {
 		if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
 			$getData = $API->comm("/system/script/print", array(
 				"?source" => "$idhr",
 			));
-			$TotalReg = is_array($getData) ? count($getData) : 0;
+			$TotalReg = count($getData);
 			$API->disconnect();
 		}
 		$filedownload = $idhr;
@@ -140,7 +134,7 @@ if (!isset($_SESSION["mikpay"])) {
 			$getData = $API->comm("/system/script/print", array(
 				"?owner" => "$idbl",
 			));
-			$TotalReg = is_array($getData) ? count($getData) : 0;
+			$TotalReg = count($getData);
 			$API->disconnect();
 		}
 		$filedownload = $idbl;
@@ -151,7 +145,7 @@ if (!isset($_SESSION["mikpay"])) {
 			$getData = $API->comm("/system/script/print", array(
 				"?comment" => "mikpay",
 			));
-			$TotalReg = is_array($getData) ? count($getData) : 0;
+			$TotalReg = count($getData);
 			$API->disconnect();
 		}
 		$filedownload = "all";
@@ -300,95 +294,152 @@ function number_format(number, decimals, dec_point, thousands_sep) {
 				
 				<tbody id="tbody">
 				<?php
-			$dataresume = '';
-			$totalresume = 0;
-			
-			if ($TotalReg > 0 && is_array($getData)) {
-				if ($fcomment != "" || $pcomment == "!!") {
-					for ($i = 0; $i < $TotalReg; $i++) {
-						if (!isset($getData[$i]['name'])) continue;
-						$getname = explode("-|-", $getData[$i]['name']);
-						if (count($getname) >= 9 && isset($getname[8]) && strpos($getname[8], $fcomment) !== false){
-							echo "<tr>";
-							echo "<td>" . (isset($getname[0]) ? htmlspecialchars($getname[0]) : '') . "</td>";
-							echo "<td>" . (isset($getname[1]) ? htmlspecialchars($getname[1]) : '') . "</td>";
-							echo "<td>" . (isset($getname[2]) ? htmlspecialchars($getname[2]) : '') . "</td>";
-							echo "<td>" . (isset($getname[7]) ? htmlspecialchars($getname[7]) : '') . "</td>";
-							echo "<td>" . (isset($getname[8]) ? htmlspecialchars($getname[8]) : '') . "</td>";
-							echo "<td style='text-align:right;'>" . (isset($getname[3]) ? htmlspecialchars($getname[3]) : '0') . "</td>";
-							echo "</tr>";
-						}
-					}
-				} elseif ($prefix != "") {
-					for ($i = 0; $i < $TotalReg; $i++) {
-						if (!isset($getData[$i]['name'])) continue;
-						$getname = explode("-|-", $getData[$i]['name']);
-						if (count($getname) >= 3 && isset($getname[2]) && substr($getname[2], 0, strlen($prefix)) == $prefix) {
-							echo "<tr>";
-							echo "<td>" . (isset($getname[0]) ? htmlspecialchars($getname[0]) : '') . "</td>";
-							echo "<td>" . (isset($getname[1]) ? htmlspecialchars($getname[1]) : '') . "</td>";
-							echo "<td>" . (isset($getname[2]) ? htmlspecialchars($getname[2]) : '') . "</td>";
-							echo "<td>" . (isset($getname[7]) ? htmlspecialchars($getname[7]) : '') . "</td>";
-							echo "<td>" . (isset($getname[8]) ? htmlspecialchars($getname[8]) : '') . "</td>";
-							echo "<td style='text-align:right;'>" . (isset($getname[3]) ? htmlspecialchars($getname[3]) : '0') . "</td>";
-							echo "</tr>";
-						}
-					}
-				} elseif ($range != "") {
-					$rangeParts = explode('-', $range);
-					if (count($rangeParts) == 2) {
-						$x = intval($rangeParts[0]);
-						$y = intval($rangeParts[1]);
-						$dayRange = range($x, $y);
+			if ($fcomment != "" || $pcomment == "!!") {
+
+				for ($i = 0; $i < $TotalReg; $i++) {
+					$getname = explode("-|-", $getData[$i]['name']);
+					if (isset($getname[8]) && strpos($getname[8], $fcomment) !== false){
+						echo "<tr>";
+						echo "<td>";
 						
-						for ($i = 0; $i < $TotalReg; $i++) {
-							if (!isset($getData[$i]['name'])) continue;
-							$getname = explode("-|-", $getData[$i]['name']);
-							if (count($getname) >= 1 && isset($getname[0])) {
-								$day = substr($getname[0], 4, 2);
-								if (substr($day, 0, 1) == "0") {
-									$day = intval(substr($day, -1));
-								} else {
-									$day = intval($day);
-								}
-								if (in_array($day, $dayRange)) {
-									echo "<tr>";
-									echo "<td>" . htmlspecialchars($getname[0]) . "</td>";
-									echo "<td>" . (isset($getname[1]) ? htmlspecialchars($getname[1]) : '') . "</td>";
-									echo "<td>" . (isset($getname[2]) ? htmlspecialchars($getname[2]) : '') . "</td>";
-									echo "<td>" . (isset($getname[7]) ? htmlspecialchars($getname[7]) : '') . "</td>";
-									echo "<td>" . (isset($getname[8]) ? htmlspecialchars($getname[8]) : '') . "</td>";
-									echo "<td style='text-align:right;'>" . (isset($getname[3]) ? htmlspecialchars($getname[3]) : '0') . "</td>";
-									echo "</tr>";
-								}
-							}
-						}
+						$tgl = isset($getname[0]) ? $getname[0] : '';
+						echo $tgl;
+						echo "</td>";
+						echo "<td>";
+						$ltime = isset($getname[1]) ? $getname[1] : '';
+						echo $ltime;
+						echo "</td>";
+						echo "<td>";
+						$username = isset($getname[2]) ? $getname[2] : '';
+						echo $username;
+						echo "</td>";
+						echo "<td>";
+						$profile = isset($getname[7]) ? $getname[7] : '';
+						echo $profile;
+						echo "</td>";
+						echo "<td>";
+						$comment = isset($getname[8]) ? $getname[8] : '';
+						echo $comment;
+						echo "</td>";
+						echo "<td style='text-align:right;'>";
+						$price = isset($getname[3]) ? $getname[3] : '0';
+						echo $price;
+						echo "</td>";
+						echo "</tr>";
 					}
-				} else {
-					for ($i = 0; $i < $TotalReg; $i++) {
-						if (!isset($getData[$i]['name'])) continue;
-						$getname = explode("-|-", $getData[$i]['name']);
-						if (count($getname) >= 9) {
-							echo "<tr>";
-							echo "<td>" . (isset($getname[0]) ? htmlspecialchars($getname[0]) : '') . "</td>";
-							echo "<td>" . (isset($getname[1]) ? htmlspecialchars($getname[1]) : '') . "</td>";
-							echo "<td>" . (isset($getname[2]) ? htmlspecialchars($getname[2]) : '') . "</td>";
-							echo "<td>" . (isset($getname[7]) ? htmlspecialchars($getname[7]) : '') . "</td>";
-							echo "<td>" . (isset($getname[8]) ? htmlspecialchars($getname[8]) : '') . "</td>";
-							echo "<td style='text-align:right;'>" . (isset($getname[3]) ? htmlspecialchars($getname[3]) : '0') . "</td>";
-							echo "</tr>";
-							
-							if (isset($getname[0]) && isset($getname[3])) {
-								$dataresume .= $getname[0] . $getname[3];
-								$totalresume += floatval($getname[3]);
-							}
-						}
+				}
+			} elseif ($prefix != "") {
+				for ($i = 0; $i < $TotalReg; $i++) {
+					$getname = explode("-|-", $getData[$i]['name']);
+					if (isset($getname[2]) && substr($getname[2], 0, strlen($prefix)) == $prefix) {
+						echo "<tr>";
+						echo "<td>";
+						
+						$tgl = isset($getname[0]) ? $getname[0] : '';
+						echo $tgl;
+						echo "</td>";
+						echo "<td>";
+						$ltime = isset($getname[1]) ? $getname[1] : '';
+						echo $ltime;
+						echo "</td>";
+						echo "<td>";
+						$username = isset($getname[2]) ? $getname[2] : '';
+						echo $username;
+						echo "</td>";
+						echo "<td>";
+						$profile = isset($getname[7]) ? $getname[7] : '';
+						echo $profile;
+						echo "</td>";
+						echo "<td>";
+						$comment = isset($getname[8]) ? $getname[8] : '';
+						echo $comment;
+						echo "</td>";
+						echo "<td style='text-align:right;'>";
+						$price = isset($getname[3]) ? $getname[3] : '0';
+						echo $price;
+						echo "</td>";
+						echo "</tr>";
 					}
-					$_SESSION['dataresume'] = $dataresume;
-					$_SESSION['totalresume'] = $TotalReg . '/' . $totalresume;
+				}
+			} elseif ($range != "") {
+			  $x = explode('-',$range)[0];
+			  $y = explode('-',$range)[1];
+
+        $range = range($x, $y);
+        
+				for ($i = 0; $i < $TotalReg; $i++) {
+					$getname = explode("-|-", $getData[$i]['name']);
+					$day = substr($getname[0],4,2); if(substr($day,0,1) == "0"){$day = substr($day,-1);}else{$day=$day;}
+					if (in_array($day, $range)) {
+						echo "<tr>";
+						echo "<td>";
+						
+						$tgl = isset($getname[0]) ? $getname[0] : '';
+						echo $tgl;
+						echo "</td>";
+						echo "<td>";
+						$ltime = isset($getname[1]) ? $getname[1] : '';
+						echo $ltime;
+						echo "</td>";
+						echo "<td>";
+						$username = isset($getname[2]) ? $getname[2] : '';
+						echo $username;
+						echo "</td>";
+						echo "<td>";
+						$profile = isset($getname[7]) ? $getname[7] : '';
+						echo $profile;
+						echo "</td>";
+						echo "<td>";
+						$comment = isset($getname[8]) ? $getname[8] : '';
+						echo $comment;
+						echo "</td>";
+						echo "<td style='text-align:right;'>";
+						$price = isset($getname[3]) ? $getname[3] : '0';
+						echo $price;
+						echo "</td>";
+						echo "</tr>";
+					}
 				}
 			} else {
-				echo "<tr><td colspan='6' style='text-align:center; padding:20px;'>Tidak ada data untuk ditampilkan</td></tr>";
+				$dataresume = '';
+				$totalresume = 0;
+				for ($i = 0; $i < $TotalReg; $i++) {
+					$getname = explode("-|-", $getData[$i]['name']);
+					echo "<tr>";
+					echo "<td>";
+					
+					$tgl = isset($getname[0]) ? $getname[0] : '';
+					echo $tgl;
+					echo "</td>";
+					echo "<td>";
+					$ltime = isset($getname[1]) ? $getname[1] : '';
+					echo $ltime;
+					echo "</td>";
+					echo "<td>";
+					$username = isset($getname[2]) ? $getname[2] : '';
+					echo $username;
+					echo "</td>";
+					echo "<td>";
+					$profile = isset($getname[7]) ? $getname[7] : '';
+					echo $profile;
+					echo "</td>";
+					echo "<td>";
+					$comment = isset($getname[8]) ? $getname[8] : '';
+					echo $comment;
+					echo "</td>";
+					echo "<td style='text-align:right;'>";
+					$price = isset($getname[3]) ? $getname[3] : '0';
+					echo $price;
+					echo "</td>";
+					echo "</tr>";
+				
+				if (isset($getname[0]) && isset($getname[3])) {
+					$dataresume .= $getname[0].$getname[3];
+					$totalresume += floatval($getname[3]);
+				}
+				}
+				$_SESSION['dataresume'] = $dataresume;
+				$_SESSION['totalresume'] = $TotalReg.'/'.$totalresume;
 			}
 			?>
 			</tbody>
