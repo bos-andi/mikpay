@@ -257,7 +257,7 @@ date_default_timezone_set($_SESSION['timezone']);
 		}
 
 
-		if ($qty < 2) {
+		if ($qty < 2 && isset($u[1]) && !empty($u[1])) {
 			echo "<script>window.location='./?hotspot-user=" . $u[1] . "&session=" . $session . "'</script>";
 			exit;
 		} else {
