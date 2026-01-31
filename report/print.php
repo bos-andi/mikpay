@@ -8,7 +8,7 @@
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
@@ -39,14 +39,10 @@ if (!isset($_SESSION["mikpay"])) {
   $API = new RouterosAPI();
   $API->debug = false;
 
-	$idhr = isset($_GET['idhr']) ? $_GET['idhr'] : '';
-	$idbl = isset($_GET['idbl']) ? $_GET['idbl'] : '';
-	$idbl2 = '';
+	$idhr = $_GET['idhr'];
+	$idbl = $_GET['idbl'];
+	$idbl2 = explode("/",$idhr)[0].explode("/",$idhr)[2];
 	if ($idhr != ""){
-		$idhrParts = explode("/", $idhr);
-		if (count($idhrParts) >= 3) {
-			$idbl2 = $idhrParts[0] . $idhrParts[2];
-		}
 		$_SESSION['report'] = "&idhr=".$idhr;
 	} elseif ($idbl != ""){
 		$_SESSION['report'] = "&idbl=".$idbl;
@@ -54,26 +50,21 @@ if (!isset($_SESSION["mikpay"])) {
 		$_SESSION['report'] = "";
 	}
 	$_SESSION['idbl'] = $idbl;
-	$remdata = isset($_POST['remdata']) ? $_POST['remdata'] : '';
-	$prefix = isset($_GET['prefix']) ? $_GET['prefix'] : '';
-	$fcomment = isset($_GET['comment']) ? $_GET['comment'] : '';
-	$range = isset($_GET['range']) ? $_GET['range'] : '';
-	if(!empty($range)){$trange = "[".$range."]";} else {$trange = "";}
+	$remdata = ($_POST['remdata']);
+	$prefix = $_GET['prefix'];
+	$fcomment = $_GET['comment'];
+	$range = $_GET['range'];
+	if(!empty($range)){$trange = "[".$range."]";}
 	
 	$pcomment = substr($prefix, 0,2);
 	if($pcomment == "!!"){
 		$fcomment = explode("!!",$prefix)[1];
 	}else{$fcomment = $fcomment;}
 
-	// Connect to router first before getting timezone
 	if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
 		$gettimezone = $API->comm("/system/clock/print");
-		if (isset($gettimezone[0]['time-zone-name'])) {
-			$timezone = $gettimezone[0]['time-zone-name'];
-			date_default_timezone_set($timezone);
-		} else {
-			date_default_timezone_set('Asia/Jakarta');
-		}
+		$timezone = $gettimezone[0]['time-zone-name'];
+		date_default_timezone_set($timezone);
 		$API->disconnect();
 	} else {
 		date_default_timezone_set('Asia/Jakarta');
@@ -92,6 +83,7 @@ if (!isset($_SESSION["mikpay"])) {
 					$READ = $API->read();
 
 				}
+				$API->disconnect();
 			}
 		} elseif (strlen($idbl) > "0") {
 			if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
@@ -105,6 +97,7 @@ if (!isset($_SESSION["mikpay"])) {
 					$READ = $API->read();
 
 				}
+				$API->disconnect();
 			}
 
 		}
@@ -118,7 +111,7 @@ if (!isset($_SESSION["mikpay"])) {
 	} else {
 		$fprefix = "";
 	}
-	if (strlen($idhr) > 0) {
+	if (strlen($idhr) > "0") {
 		if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
 			$getData = $API->comm("/system/script/print", array(
 				"?source" => "$idhr",
@@ -129,7 +122,7 @@ if (!isset($_SESSION["mikpay"])) {
 		$filedownload = $idhr;
 		$shf = "hidden";
 		$shd = "inline-block";
-	} elseif (strlen($idbl) > 0) {
+	} elseif (strlen($idbl) > "0") {
 		if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
 			$getData = $API->comm("/system/script/print", array(
 				"?owner" => "$idbl",
@@ -140,7 +133,7 @@ if (!isset($_SESSION["mikpay"])) {
 		$filedownload = $idbl;
 		$shf = "hidden";
 		$shd = "inline-block";
-	} else {
+	} elseif ($idhr == "" || $idbl == "") {
 		if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
 			$getData = $API->comm("/system/script/print", array(
 				"?comment" => "mikpay",
@@ -151,6 +144,17 @@ if (!isset($_SESSION["mikpay"])) {
 		$filedownload = "all";
 		$shf = "text";
 		$shd = "none";
+	} elseif (strlen($idbl) > "0" ) {
+		if ($API->connect($iphost, $userhost, decrypt($passwdhost))) {
+			$getData = $API->comm("/system/script/print", array(
+				"?owner" => "$idbl",
+			));
+			$TotalReg = count($getData);
+			$API->disconnect();
+		}
+		$filedownload = $idbl;
+		$shf = "hidden";
+		$shd = "inline-block";
 	}
 	
 }
@@ -298,31 +302,31 @@ function number_format(number, decimals, dec_point, thousands_sep) {
 
 				for ($i = 0; $i < $TotalReg; $i++) {
 					$getname = explode("-|-", $getData[$i]['name']);
-					if (isset($getname[8]) && strpos($getname[8], $fcomment) !== false){
+					if (strpos($getname[8], $fcomment) !== false){
 						echo "<tr>";
 						echo "<td>";
 						
-						$tgl = isset($getname[0]) ? $getname[0] : '';
+						$tgl = $getname[0];
 						echo $tgl;
 						echo "</td>";
 						echo "<td>";
-						$ltime = isset($getname[1]) ? $getname[1] : '';
+						$ltime = $getname[1];
 						echo $ltime;
 						echo "</td>";
 						echo "<td>";
-						$username = isset($getname[2]) ? $getname[2] : '';
+						$username = $getname[2];
 						echo $username;
 						echo "</td>";
 						echo "<td>";
-						$profile = isset($getname[7]) ? $getname[7] : '';
+						$profile = $getname[7];
 						echo $profile;
 						echo "</td>";
 						echo "<td>";
-						$comment = isset($getname[8]) ? $getname[8] : '';
+						$comment = $getname[8];
 						echo $comment;
 						echo "</td>";
 						echo "<td style='text-align:right;'>";
-						$price = isset($getname[3]) ? $getname[3] : '0';
+						$price = $getname[3];
 						echo $price;
 						echo "</td>";
 						echo "</tr>";
@@ -331,31 +335,31 @@ function number_format(number, decimals, dec_point, thousands_sep) {
 			} elseif ($prefix != "") {
 				for ($i = 0; $i < $TotalReg; $i++) {
 					$getname = explode("-|-", $getData[$i]['name']);
-					if (isset($getname[2]) && substr($getname[2], 0, strlen($prefix)) == $prefix) {
+					if (substr($getname[2], 0, strlen($prefix)) == $prefix) {
 						echo "<tr>";
 						echo "<td>";
 						
-						$tgl = isset($getname[0]) ? $getname[0] : '';
+						$tgl = $getname[0];
 						echo $tgl;
 						echo "</td>";
 						echo "<td>";
-						$ltime = isset($getname[1]) ? $getname[1] : '';
+						$ltime = $getname[1];
 						echo $ltime;
 						echo "</td>";
 						echo "<td>";
-						$username = isset($getname[2]) ? $getname[2] : '';
+						$username = $getname[2];
 						echo $username;
 						echo "</td>";
 						echo "<td>";
-						$profile = isset($getname[7]) ? $getname[7] : '';
+						$profile = $getname[7];
 						echo $profile;
 						echo "</td>";
 						echo "<td>";
-						$comment = isset($getname[8]) ? $getname[8] : '';
+						$comment = $getname[8];
 						echo $comment;
 						echo "</td>";
 						echo "<td style='text-align:right;'>";
-						$price = isset($getname[3]) ? $getname[3] : '0';
+						$price = $getname[3];
 						echo $price;
 						echo "</td>";
 						echo "</tr>";
@@ -374,72 +378,69 @@ function number_format(number, decimals, dec_point, thousands_sep) {
 						echo "<tr>";
 						echo "<td>";
 						
-						$tgl = isset($getname[0]) ? $getname[0] : '';
+						$tgl = $getname[0];
 						echo $tgl;
 						echo "</td>";
 						echo "<td>";
-						$ltime = isset($getname[1]) ? $getname[1] : '';
+						$ltime = $getname[1];
 						echo $ltime;
 						echo "</td>";
 						echo "<td>";
-						$username = isset($getname[2]) ? $getname[2] : '';
+						$username = $getname[2];
 						echo $username;
 						echo "</td>";
 						echo "<td>";
-						$profile = isset($getname[7]) ? $getname[7] : '';
+						$profile = $getname[7];
 						echo $profile;
 						echo "</td>";
 						echo "<td>";
-						$comment = isset($getname[8]) ? $getname[8] : '';
+						$comment = $getname[8];
 						echo $comment;
 						echo "</td>";
 						echo "<td style='text-align:right;'>";
-						$price = isset($getname[3]) ? $getname[3] : '0';
+						$price = $getname[3];
 						echo $price;
 						echo "</td>";
 						echo "</tr>";
 					}
 				}
 			} else {
-				$dataresume = '';
-				$totalresume = 0;
 				for ($i = 0; $i < $TotalReg; $i++) {
 					$getname = explode("-|-", $getData[$i]['name']);
 					echo "<tr>";
 					echo "<td>";
 					
-					$tgl = isset($getname[0]) ? $getname[0] : '';
+					$tgl = $getname[0];
 					echo $tgl;
 					echo "</td>";
 					echo "<td>";
-					$ltime = isset($getname[1]) ? $getname[1] : '';
+					$ltime = $getname[1];
 					echo $ltime;
 					echo "</td>";
 					echo "<td>";
-					$username = isset($getname[2]) ? $getname[2] : '';
+					$username = $getname[2];
 					echo $username;
 					echo "</td>";
 					echo "<td>";
-					$profile = isset($getname[7]) ? $getname[7] : '';
+					$profile = $getname[7];
 					echo $profile;
 					echo "</td>";
 					echo "<td>";
-					$comment = isset($getname[8]) ? $getname[8] : '';
+					$comment = $getname[8];
 					echo $comment;
 					echo "</td>";
 					echo "<td style='text-align:right;'>";
-					$price = isset($getname[3]) ? $getname[3] : '0';
+					$price = $getname[3];
 					echo $price;
 					echo "</td>";
 					echo "</tr>";
 				
-				if (isset($getname[0]) && isset($getname[3])) {
-					$dataresume .= $getname[0].$getname[3];
-					$totalresume += floatval($getname[3]);
-				}
-				}
+				$dataresume .= $getname[0].$getname[3];
+				$totalresume += $getname[3];
 				$_SESSION['dataresume'] = $dataresume;
 				$_SESSION['totalresume'] = $TotalReg.'/'.$totalresume;
+				}
+					
 			}
 			?>
 			</tbody>
