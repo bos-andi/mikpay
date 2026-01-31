@@ -9,8 +9,6 @@ include('../include/superadmin.php');
 include('../include/subscription.php');
 include('../include/business_config.php');
 
-$adminLogo = getLogoPath('', '../', false);
-
 // Handle logout
 if (isset($_GET['logout'])) {
     unset($_SESSION['superadmin']);
@@ -650,8 +648,12 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
 <div class="login-container">
     <div class="login-box">
         <div class="login-logo">
-            <?php if ($adminLogo['exists']): ?>
-            <img src="<?= $adminLogo['path'] ?>?v=<?= time() ?>" alt="Logo">
+            <?php 
+            // Always use logo.png for superadmin
+            $logoPath = '../img/logo.png';
+            $logoExists = file_exists(__DIR__ . '/../img/logo.png');
+            if ($logoExists): ?>
+            <img src="<?= $logoPath ?>?v=<?= time() ?>" alt="Logo">
             <?php else: ?>
             <div style="width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, #4D44B5 0%, #6366f1 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 32px; font-weight: 700; color: #FFF;">M</div>
             <?php endif; ?>
