@@ -844,3 +844,24 @@ $quota = getRemainingQuota();
         </div>
     </div>
 </div>
+
+<script>
+// Toggle schedule settings visibility
+document.addEventListener('DOMContentLoaded', function() {
+    var scheduleEnabled = document.getElementById('scheduleEnabled');
+    var scheduleSettings = document.getElementById('scheduleSettings');
+    
+    if (scheduleEnabled && scheduleSettings) {
+        function toggleScheduleSettings() {
+            if (scheduleEnabled.checked) {
+                scheduleSettings.style.display = 'block';
+            } else {
+                scheduleSettings.style.display = 'none';
+            }
+        }
+        
+        scheduleEnabled.addEventListener('change', toggleScheduleSettings);
+        toggleScheduleSettings(); // Initial state
+    }
+});
+</script>
