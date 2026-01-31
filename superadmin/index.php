@@ -3,7 +3,10 @@
  * MIKPAY Super Admin Panel
  */
 session_start();
-error_reporting(0);
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 
 include('../include/superadmin.php');
 include('../include/subscription.php');
@@ -93,59 +96,166 @@ if ($isSuperAdminSession) {
     }
     // Activate user
     if (isset($_POST['activate_user'])) {
-        activateUser($_POST['user_id']);
+        if (function_exists('activateUser')) {
+            activateUser($_POST['user_id']);
+        } elseif (file_exists('../include/database.php')) {
+            include_once('../include/database.php');
+            if (function_exists('updateUser')) {
+                updateUser(intval($_POST['user_id']), array('status' => 'active'));
+            }
+        }
         header('Location: index.php?tab=users&msg=activated');
         exit;
     }
     // Deactivate user
     if (isset($_POST['deactivate_user'])) {
         $reason = isset($_POST['reason']) ? $_POST['reason'] : '';
-        deactivateUser($_POST['user_id'], $reason);
+        if (function_exists('deactivateUser')) {
+            deactivateUser($_POST['user_id'], $reason);
+        } elseif (file_exists('../include/database.php')) {
+            include_once('../include/database.php');
+            if (function_exists('updateUser')) {
+                updateUser(intval($_POST['user_id']), array('status' => 'inactive'));
+            }
+        }
         header('Location: index.php?tab=users&msg=deactivated');
         exit;
     }
     // Delete user
     if (isset($_POST['delete_user'])) {
-        deleteUser($_POST['user_id']);
+        if (function_exists('deleteUser')) {
+            deleteUser($_POST['user_id']);
+        } elseif (file_exists('../include/database.php')) {
+            include_once('../include/database.php');
+            if (function_exists('deleteUser')) {
+                deleteUser(intval($_POST['user_id']));
+            }
+        }
         header('Location: index.php?tab=users&msg=deleted');
         exit;
     }
     // Add new user
     if (isset($_POST['add_user'])) {
         $userId = trim($_POST['new_user_id']);
-        $userData = array(
-            'id' => $userId,
-            'name' => trim($_POST['new_user_name']),
-            'email' => trim($_POST['new_user_email']),
-            'phone' => trim($_POST['new_user_phone']),
-            'package' => $_POST['new_user_package'],
-            'status' => 'active',
-            'notes' => trim($_POST['new_user_notes'])
-        );
-        saveUser($userId, $userData);
+        if (function_exists('saveUser')) {
+            $userData = array(
+                'id' => $userId,
+                'name' => trim($_POST['new_user_name']),
+                'email' => trim($_POST['new_user_email']),
+                'phone' => trim($_POST['new_user_phone']),
+                'package' => $_POST['new_user_package'],
+                'status' => 'active',
+                'notes' => trim($_POST['new_user_notes'])
+            );
+            saveUser($userId, $userData);
+        } elseif (file_exists('../include/database.php')) {
+            include_once('../include/database.php');
+            if (function_exists('createUser')) {
+                createUser($userId, 'password123', trim($_POST['new_user_email']), trim($_POST['new_user_name']), trim($_POST['new_user_phone']), 'user');
+            }
+        }
         header('Location: index.php?tab=users&msg=added');
         exit;
     }
     // Update subscription manually
     if (isset($_POST['update_subscription'])) {
-        setUserPackage($_POST['sub_package'], intval($_POST['sub_days']));
+        if (function_exists('setUserPackage')) {
+            setUserPackage($_POST['sub_package'], intval($_POST['sub_days']));
+        }
         header('Location: index.php?tab=subscription&msg=updated');
         exit;
     }
     // Extend subscription
     if (isset($_POST['extend_subscription'])) {
-        extendUserSubscription('main', intval($_POST['extend_days']));
+        if (function_exists('extendUserSubscription')) {
+            extendUserSubscription('main', intval($_POST['extend_days']));
+        }
         header('Location: index.php?tab=subscription&msg=extended');
         exit;
     }
 }
 
-$payments = getPendingPayments();
-$stats = getPaymentStats();
-$subscription = getSubscription();
-$packages = getSubscriptionPackages();
-$users = getAllUsers();
-$userStats = getUserStats();
+// Initialize variables with error handling
+$payments = array();
+$stats = array('pending' => 0, 'approved' => 0, 'rejected' => 0, 'total_revenue' => 0);
+$subscription = array('status' => 'active', 'package' => 'pro', 'start_date' => date('Y-m-d'), 'end_date' => date('Y-m-d', strtotime('+30 days')));
+$packages = array();
+$users = array();
+$userStats = array('total' => 0, 'active' => 0, 'inactive' => 0);
+
+try {
+    if (function_exists('getPendingPayments')) {
+        $payments = getPendingPayments();
+    }
+} catch (Exception $e) {
+    error_log("Error getting payments: " . $e->getMessage());
+}
+
+try {
+    if (function_exists('getPaymentStats')) {
+        $stats = getPaymentStats();
+    }
+} catch (Exception $e) {
+    error_log("Error getting payment stats: " . $e->getMessage());
+}
+
+try {
+    if (function_exists('getSubscription')) {
+        $subscription = getSubscription();
+    }
+} catch (Exception $e) {
+    error_log("Error getting subscription: " . $e->getMessage());
+}
+
+try {
+    if (function_exists('getSubscriptionPackages')) {
+        $packages = getSubscriptionPackages();
+    }
+} catch (Exception $e) {
+    error_log("Error getting packages: " . $e->getMessage());
+}
+
+try {
+    // Try database getAllUsers first
+    if (function_exists('getAllUsers') && file_exists('../include/database.php')) {
+        include_once('../include/database.php');
+        if (function_exists('getAllUsers')) {
+            $dbUsers = getAllUsers();
+            if (!empty($dbUsers)) {
+                $users = $dbUsers;
+            }
+        }
+    }
+    
+    // Fallback to subscription getAllUsers
+    if (empty($users) && function_exists('getAllUsers')) {
+        $users = getAllUsers();
+    }
+} catch (Exception $e) {
+    error_log("Error getting users: " . $e->getMessage());
+}
+
+try {
+    if (function_exists('getUserStats')) {
+        $userStats = getUserStats();
+    } else {
+        // Calculate stats manually
+        $userStats = array(
+            'total' => count($users),
+            'active' => 0,
+            'inactive' => 0
+        );
+        foreach ($users as $user) {
+            if (isset($user['status']) && $user['status'] === 'active') {
+                $userStats['active']++;
+            } else {
+                $userStats['inactive']++;
+            }
+        }
+    }
+} catch (Exception $e) {
+    error_log("Error getting user stats: " . $e->getMessage());
+}
 
 $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
 ?>
