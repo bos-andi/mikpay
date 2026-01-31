@@ -888,13 +888,38 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
                     <th>Session ID</th>
                     <th>Nama Router</th>
                     <th>Host/IP</th>
+                    <th>Username</th>
+                    <th>Password</th>
                     <th>Paket</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($users as $user): ?>
+                <?php 
+                include_once('../lib/routeros_api.class.php');
+                foreach ($users as $user): 
+                    // Get password for config.php users
+                    $displayPassword = '-';
+                    $passwordVisible = false;
+                    if (isset($user['source']) && $user['source'] == 'config') {
+                        // Load from config.php
+                        include_once('../include/config.php');
+                        include_once('../include/readcfg.php');
+                        if (isset($data[$user['id']])) {
+                            $session = $user['id'];
+                            $iphost = explode('!', $data[$session][1])[1];
+                            $userhost = explode('@|@', $data[$session][2])[1];
+                            $passwdhost = explode('#|#', $data[$session][3])[1];
+                            $displayPassword = decrypt($passwdhost);
+                            $passwordVisible = true;
+                        }
+                    } elseif (isset($user['password'])) {
+                        // From JSON users
+                        $displayPassword = $user['password'];
+                        $passwordVisible = true;
+                    }
+                ?>
                 <tr>
                     <td>
                         <strong><?= htmlspecialchars($user['id']) ?></strong>
@@ -911,6 +936,25 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
                     <td>
                         <?php if (isset($user['host']) && $user['host']): ?>
                         <code style="background:#f1f5f9; padding:4px 8px; border-radius:4px; font-size:12px;"><?= htmlspecialchars($user['host']) ?></code>
+                        <?php else: ?>
+                        <span style="color:#94a3b8;">-</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php if (isset($displayUsername) && $displayUsername !== '-'): ?>
+                        <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:12px;"><?= htmlspecialchars($displayUsername) ?></code>
+                        <?php else: ?>
+                        <span style="color:#94a3b8;">-</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php if ($passwordVisible): ?>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span id="pass-<?= htmlspecialchars($user['id']) ?>" style="font-family: monospace; background:#fef3c7; padding:4px 8px; border-radius:4px; font-size:12px;">••••••••</span>
+                            <button type="button" onclick="togglePassword('<?= htmlspecialchars($user['id']) ?>', '<?= htmlspecialchars($displayPassword) ?>')" style="background: none; border: none; cursor: pointer; color: #64748b; padding: 4px;">
+                                <i id="icon-<?= htmlspecialchars($user['id']) ?>" class="fa fa-eye"></i>
+                            </button>
+                        </div>
                         <?php else: ?>
                         <span style="color:#94a3b8;">-</span>
                         <?php endif; ?>
@@ -953,7 +997,9 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
                         </div>
                     </td>
                 </tr>
-                <?php endforeach; ?>
+                <?php 
+                    unset($userhost, $passwdhost, $iphost);
+                endforeach; ?>
             </tbody>
         </table>
         <?php endif; ?>

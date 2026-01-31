@@ -98,7 +98,7 @@ if ($id == "login" || substr($url, -1) == "p") {
       $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Invalid username or password.</div>';
     }
   }
-  
+
   include_once('./include/login.php');
 } elseif (!isset($_SESSION["mikpay"])) {
   echo "<script>window.location='./admin.php?id=login'</script>";
@@ -175,6 +175,9 @@ if ($id == "login" || substr($url, -1) == "p") {
 } elseif ($id == "users") {
   include_once('./include/menu.php');
   include_once('./admin/users.php');
+} elseif ($id == "change-password") {
+  include_once('./include/menu.php');
+  include_once('./settings/change-password.php');
 } elseif ($id == "delete-user" && isset($_GET['user_id'])) {
   include_once('./include/subscription.php');
   $userId = $_GET['user_id'];

@@ -20,7 +20,8 @@
 
 if(substr($_SERVER["REQUEST_URI"], -10) == "config.php"){header("Location:./");}; 
 
-// Admin credentials (default: mikpay/mikpay)
+// Admin credentials (default: mikpay/1234)
+// Password "1234" encrypted: aWNlbA==
 $data['mikpay'] = array ('1'=>'mikpay<|<mikpay','mikpay>|>aWNlbA==');
 
 // Example router configuration (uncomment and modify)
