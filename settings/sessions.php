@@ -29,8 +29,8 @@ if (!isset($_SESSION["mikpay"])) {
   
   // Include required files with error handling
   try {
-    include('../include/config.php');
-    include('../include/readcfg.php');
+    include('./include/config.php');
+    include('./include/readcfg.php');
   } catch (Exception $e) {
     die("Error loading configuration: " . $e->getMessage());
   }
