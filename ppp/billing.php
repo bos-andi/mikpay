@@ -2388,7 +2388,20 @@ document.getElementById('importForm').addEventListener('submit', function(e) {
         body: formData
     })
     .then(function(response) {
-        return response.json();
+        // Check if response is OK
+        if (!response.ok) {
+            throw new Error('HTTP Error: ' + response.status + ' ' + response.statusText);
+        }
+        
+        // Get response text first
+        return response.text().then(function(text) {
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                // If not JSON, return error
+                throw new Error('Invalid JSON response: ' + text.substring(0, 200));
+            }
+        });
     })
     .then(function(data) {
         document.getElementById('importProgress').style.display = 'none';

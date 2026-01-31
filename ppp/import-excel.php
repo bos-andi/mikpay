@@ -4,29 +4,56 @@
  * Membaca file Excel/CSV dan update data pelanggan yang masih kosong
  */
 
+// Set error handling - capture all errors
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Start output buffering to catch any unexpected output
+ob_start();
+
 session_start();
-error_reporting(0);
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
+
+// Function to send JSON response and exit
+function sendJsonResponse($data) {
+    ob_clean(); // Clear any output
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
 
 if (!isset($_SESSION["mikpay"])) {
-    echo json_encode(['success' => false, 'message' => 'Session expired']);
-    exit;
+    sendJsonResponse(['success' => false, 'message' => 'Session expired']);
 }
 
 $session = $_POST['session'] ?? $_GET['session'] ?? '';
 
 if (empty($session)) {
-    echo json_encode(['success' => false, 'message' => 'Session tidak ditemukan']);
-    exit;
+    sendJsonResponse(['success' => false, 'message' => 'Session tidak ditemukan']);
 }
 
 // Include billing data functions
 include_once(dirname(__FILE__) . '/billing-data.php');
 
 // Check if file was uploaded
-if (!isset($_FILES['excel_file']) || $_FILES['excel_file']['error'] !== UPLOAD_ERR_OK) {
-    echo json_encode(['success' => false, 'message' => 'File tidak ditemukan atau error saat upload']);
-    exit;
+if (!isset($_FILES['excel_file'])) {
+    sendJsonResponse(['success' => false, 'message' => 'File tidak ditemukan. Pastikan file sudah dipilih.']);
+}
+
+if ($_FILES['excel_file']['error'] !== UPLOAD_ERR_OK) {
+    $errorMessages = [
+        UPLOAD_ERR_INI_SIZE => 'File terlalu besar (melebihi upload_max_filesize di php.ini)',
+        UPLOAD_ERR_FORM_SIZE => 'File terlalu besar (melebihi MAX_FILE_SIZE di form)',
+        UPLOAD_ERR_PARTIAL => 'File hanya ter-upload sebagian',
+        UPLOAD_ERR_NO_FILE => 'Tidak ada file yang di-upload',
+        UPLOAD_ERR_NO_TMP_DIR => 'Folder temporary tidak ditemukan',
+        UPLOAD_ERR_CANT_WRITE => 'Gagal menulis file ke disk',
+        UPLOAD_ERR_EXTENSION => 'Upload dihentikan oleh extension PHP'
+    ];
+    $errorMsg = isset($errorMessages[$_FILES['excel_file']['error']]) 
+        ? $errorMessages[$_FILES['excel_file']['error']] 
+        : 'Error upload file: ' . $_FILES['excel_file']['error'];
+    sendJsonResponse(['success' => false, 'message' => $errorMsg]);
 }
 
 $file = $_FILES['excel_file'];
@@ -35,27 +62,24 @@ $fileTmpName = $file['tmp_name'];
 $fileSize = $file['size'];
 $fileError = $file['error'];
 
-// Validate file
-if ($fileError !== UPLOAD_ERR_OK) {
-    echo json_encode(['success' => false, 'message' => 'Error upload file: ' . $fileError]);
-    exit;
-}
-
 // Check file size (max 5MB)
 if ($fileSize > 5 * 1024 * 1024) {
-    echo json_encode(['success' => false, 'message' => 'File terlalu besar. Maksimal 5MB']);
-    exit;
+    sendJsonResponse(['success' => false, 'message' => 'File terlalu besar. Maksimal 5MB']);
+}
+
+// Check file size (min 1 byte)
+if ($fileSize < 1) {
+    sendJsonResponse(['success' => false, 'message' => 'File kosong atau tidak valid']);
 }
 
 // Check file extension - RESMI: hanya CSV
 $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 if ($fileExt !== 'csv') {
-    echo json_encode([
+    sendJsonResponse([
         'success' => false, 
         'message' => 'Format file tidak didukung. Gunakan file CSV (.csv) dari tombol Template CSV. ' .
                      'Jika file Anda .xlsx / .xls, buka di Excel lalu pilih File > Save As > CSV (Comma delimited).'
     ]);
-    exit;
 }
 
 // Read file
@@ -77,12 +101,16 @@ try {
         ];
     }
 
-    // Hanya CSV
-        // Read CSV file
-        $handle = fopen($fileTmpName, 'r');
-        if ($handle === false) {
-            throw new Exception('Tidak bisa membaca file');
-        }
+    // Check if file is readable
+    if (!is_readable($fileTmpName)) {
+        throw new Exception('File tidak bisa dibaca. Cek permission file.');
+    }
+
+    // Read CSV file
+    $handle = fopen($fileTmpName, 'r');
+    if ($handle === false) {
+        throw new Exception('Tidak bisa membuka file. Pastikan file CSV valid.');
+    }
         
         // Baca baris pertama (header) dan deteksi delimiter
         $firstLine = fgets($handle);
@@ -195,7 +223,7 @@ try {
         $message .= count($errors) . " error ditemukan.";
     }
     
-    echo json_encode([
+    sendJsonResponse([
         'success' => true,
         'message' => $message,
         'stats' => [
@@ -207,8 +235,15 @@ try {
     ]);
     
 } catch (Exception $e) {
-    echo json_encode([
+    sendJsonResponse([
         'success' => false,
-        'message' => 'Error: ' . $e->getMessage()
+        'message' => 'Error: ' . $e->getMessage(),
+        'error_detail' => $e->getFile() . ':' . $e->getLine()
+    ]);
+} catch (Error $e) {
+    sendJsonResponse([
+        'success' => false,
+        'message' => 'Fatal Error: ' . $e->getMessage(),
+        'error_detail' => $e->getFile() . ':' . $e->getLine()
     ]);
 }
