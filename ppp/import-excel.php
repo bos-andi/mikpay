@@ -9,8 +9,28 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
+// Set error log file
+$errorLogFile = dirname(__FILE__) . '/../include/import-error.log';
+ini_set('error_log', $errorLogFile);
+
 // Start output buffering to catch any unexpected output
 ob_start();
+
+// Register shutdown function to catch fatal errors
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== NULL && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        ob_clean();
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Fatal Error: ' . $error['message'],
+            'file' => $error['file'],
+            'line' => $error['line']
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+});
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -33,7 +53,16 @@ if (empty($session)) {
 }
 
 // Include billing data functions
-include_once(dirname(__FILE__) . '/billing-data.php');
+$billingDataFile = dirname(__FILE__) . '/billing-data.php';
+if (!file_exists($billingDataFile)) {
+    sendJsonResponse(['success' => false, 'message' => 'File billing-data.php tidak ditemukan']);
+}
+include_once($billingDataFile);
+
+// Check if required functions exist
+if (!function_exists('getCustomerBilling') || !function_exists('saveCustomerBilling')) {
+    sendJsonResponse(['success' => false, 'message' => 'Function billing tidak ditemukan']);
+}
 
 // Check if file was uploaded
 if (!isset($_FILES['excel_file'])) {
@@ -235,15 +264,27 @@ try {
     ]);
     
 } catch (Exception $e) {
+    // Log error for debugging
+    error_log('Import CSV Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    
     sendJsonResponse([
         'success' => false,
-        'message' => 'Error: ' . $e->getMessage(),
-        'error_detail' => $e->getFile() . ':' . $e->getLine()
+        'message' => 'Error: ' . $e->getMessage()
     ]);
 } catch (Error $e) {
+    // Log fatal error
+    error_log('Import CSV Fatal Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    
     sendJsonResponse([
         'success' => false,
-        'message' => 'Fatal Error: ' . $e->getMessage(),
-        'error_detail' => $e->getFile() . ':' . $e->getLine()
+        'message' => 'Fatal Error: ' . $e->getMessage()
+    ]);
+} catch (Throwable $e) {
+    // Catch any other errors
+    error_log('Import CSV Throwable: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    
+    sendJsonResponse([
+        'success' => false,
+        'message' => 'Error: ' . $e->getMessage()
     ]);
 }
