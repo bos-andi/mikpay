@@ -15,7 +15,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-session_start();
+// Start session only if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 // hide all error
 error_reporting(0);
 if (substr($_SERVER["REQUEST_URI"], -11) == "readcfg.php") {
