@@ -259,53 +259,73 @@ date_default_timezone_set($_SESSION['timezone']);
 
 		if ($qty < 2) {
 			echo "<script>window.location='./?hotspot-user=" . $u[1] . "&session=" . $session . "'</script>";
+			exit;
 		} else {
 			echo "<script>window.location='./?hotspot-user=generate&session=" . $session . "'</script>";
+			exit;
 		}
 	}
 
 	$getprofile = $API->comm("/ip/hotspot/user/profile/print");
-	include_once('./voucher/temp.php');
-	$genuser = explode("-", decrypt($genu));
-	$genuser1 = explode("~", decrypt($genu));
-	$umode = $genuser[0];
-	$ucode = $genuser[1];
-	$udate = $genuser[2];
-	$uprofile = $genuser1[1];
-	$uvalid = $genuser1[2];
-	$ucommt = $genuser[3];
+	
+	// Check if temp.php exists and has valid data
+	if (file_exists('./voucher/temp.php')) {
+		include_once('./voucher/temp.php');
+		if (isset($genu) && !empty($genu)) {
+			$genuser = explode("-", decrypt($genu));
+			$genuser1 = explode("~", decrypt($genu));
+		} else {
+			// Set default values if $genu is not set
+			$genuser = array("", "", "", "");
+			$genuser1 = array("", "", "", "", "", "", "");
+		}
+	} else {
+		// Set default values if temp.php doesn't exist
+		$genuser = array("", "", "", "");
+		$genuser1 = array("", "", "", "", "", "", "");
+	}
+	$umode = isset($genuser[0]) ? $genuser[0] : "";
+	$ucode = isset($genuser[1]) ? $genuser[1] : "";
+	$udate = isset($genuser[2]) ? $genuser[2] : "";
+	$uprofile = isset($genuser1[1]) ? $genuser1[1] : "";
+	$uvalid = isset($genuser1[2]) ? $genuser1[2] : "";
+	$ucommt = isset($genuser[3]) ? $genuser[3] : "";
 	if ($uvalid == "") {
 		$uvalid = "-";
 	} else {
 		$uvalid = $uvalid;
 	}
-	$uprice = explode("!",$genuser1[3])[0];
-	if ($uprice == "0") {
+	$uprice = isset($genuser1[3]) ? explode("!",$genuser1[3])[0] : "0";
+	if ($uprice == "0" || $uprice == "") {
 		$uprice = "-";
 	} else {
 		$uprice = $uprice;
 	}
-	$suprice = explode("!",$genuser1[3])[1];
-	if ($suprice == "0") {
+	$suprice = isset($genuser1[3]) ? explode("!",$genuser1[3])[1] : "0";
+	if ($suprice == "0" || $suprice == "") {
 		$suprice = "-";
 	} else {
 		$suprice = $suprice;
 	}
-	$utlimit = $genuser1[4];
-	if ($utlimit == "0") {
+	$utlimit = isset($genuser1[4]) ? $genuser1[4] : "0";
+	if ($utlimit == "0" || $utlimit == "") {
 		$utlimit = "-";
 	} else {
 		$utlimit = $utlimit;
 	}
-	$udlimit = $genuser1[5];
-	if ($udlimit == "0") {
+	$udlimit = isset($genuser1[5]) ? $genuser1[5] : "0";
+	if ($udlimit == "0" || $udlimit == "") {
 		$udlimit = "-";
 	} else {
 		$udlimit = formatBytes($udlimit, 2);
 	}
-	$ulock = $genuser1[6];
+	$ulock = isset($genuser1[6]) ? $genuser1[6] : "";
 	//$urlprint = "$umode-$ucode-$udate-$ucommt";
-	$urlprint = explode("|", decrypt($genu))[0];
+	if (isset($genu) && !empty($genu)) {
+		$urlprint = explode("|", decrypt($genu))[0];
+	} else {
+		$urlprint = "";
+	}
 	if ($currency == in_array($currency, $cekindo['indo'])) {
 		$uprice = $currency . " " . number_format((float)$uprice, 0, ",", ".");
 		$suprice = $currency . " " . number_format((float)$suprice, 0, ",", ".");
