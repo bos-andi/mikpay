@@ -24,18 +24,61 @@ if (isset($_POST['login'])) {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     
-    if (verifySuperAdmin($email, $password)) {
+    // Try database login first
+    $dbLoginSuccess = false;
+    try {
+        if (file_exists('../include/database.php')) {
+            include_once('../include/database.php');
+            if (function_exists('verifyUser') && function_exists('isSuperAdmin')) {
+                // Try login with email or username
+                $dbUser = verifyUser($email, $password);
+                if (!$dbUser) {
+                    // Try with username if email fails
+                    $dbUser = verifyUser($email, $password);
+                }
+                
+                if ($dbUser && isSuperAdmin($dbUser['id'])) {
+                    $_SESSION['superadmin'] = true;
+                    $_SESSION['superadmin_email'] = $dbUser['email'] ?: $dbUser['username'];
+                    $_SESSION['user_id'] = $dbUser['id'];
+                    $_SESSION['user_role'] = 'superadmin';
+                    $_SESSION['mikpay'] = $dbUser['username'];
+                    $dbLoginSuccess = true;
+                    header('Location: index.php');
+                    exit;
+                }
+            }
+        }
+    } catch (Exception $e) {
+        // Fallback to old login
+    }
+    
+    // Fallback to old superadmin login
+    if (!$dbLoginSuccess && verifySuperAdmin($email, $password)) {
         $_SESSION['superadmin'] = true;
         $_SESSION['superadmin_email'] = $email;
         header('Location: index.php');
         exit;
-    } else {
+    } else if (!$dbLoginSuccess) {
         $loginError = 'Email atau password salah!';
     }
 }
 
+// Check if user is superadmin (from database or old system)
+$isSuperAdminSession = false;
+if (isset($_SESSION['superadmin']) && $_SESSION['superadmin'] === true) {
+    $isSuperAdminSession = true;
+} elseif (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin') {
+    // Set superadmin session if logged in from database
+    $_SESSION['superadmin'] = true;
+    if (!isset($_SESSION['superadmin_email'])) {
+        $_SESSION['superadmin_email'] = isset($_SESSION['user_username']) ? $_SESSION['user_username'] : 'superadmin@mikpay.com';
+    }
+    $isSuperAdminSession = true;
+}
+
 // Handle actions
-if (isSuperAdmin()) {
+if ($isSuperAdminSession) {
     // Approve payment
     if (isset($_POST['approve'])) {
         approvePayment($_POST['payment_id']);
@@ -627,7 +670,7 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
 </head>
 <body>
 
-<?php if (!isSuperAdmin()): ?>
+<?php if (!$isSuperAdminSession): ?>
 <!-- Login Form -->
 <div class="login-container">
     <div class="login-box">

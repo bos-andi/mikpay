@@ -102,7 +102,16 @@ if ($id == "login" || substr($url, -1) == "p") {
           $_SESSION["user_role"] = $dbUser['role'];
           $_SESSION["user_username"] = $dbUser['username'];
           
-          // Check subscription
+          // Redirect superadmin to superadmin panel
+          if ($dbUser['role'] === 'superadmin') {
+            // Set superadmin session for superadmin panel
+            $_SESSION['superadmin'] = true;
+            $_SESSION['superadmin_email'] = $dbUser['email'] ?: 'superadmin@mikpay.com';
+            echo "<script>window.location='./superadmin/index.php'</script>";
+            exit;
+          }
+          
+          // Check subscription for regular users
           if (function_exists('isUserSubscriptionActive')) {
             if (!isUserSubscriptionActive($dbUser['id'])) {
               // Subscription expired - redirect to subscription page
