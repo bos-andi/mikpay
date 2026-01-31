@@ -69,69 +69,12 @@ include_once('./lib/formatbytesbites.php');
     
 <?php
 if ($id == "login" || substr($url, -1) == "p") {
-  // Try to load database for multi-user login
-  $dbLoaded = false;
-  try {
-    if (file_exists('./include/database.php')) {
-      include_once('./include/database.php');
-      if (function_exists('getDBConnection') && function_exists('verifyUser')) {
-        $testConn = getDBConnection();
-        if ($testConn) {
-          $dbLoaded = true;
-        }
-      }
-    }
-  } catch (Exception $e) {
-    // Database not available, use old login
-    $dbLoaded = false;
-  }
-  
   if (isset($_POST['login'])) {
     $user = $_POST['user'];
     $pass = $_POST['pass'];
     
-    // Try database login first
-    if ($dbLoaded) {
-      try {
-        $dbUser = verifyUser($user, $pass);
-        
-        if ($dbUser) {
-          // Database user login successful
-          $_SESSION["mikpay"] = $user;
-          $_SESSION["user_id"] = $dbUser['id'];
-          $_SESSION["user_role"] = $dbUser['role'];
-          $_SESSION["user_username"] = $dbUser['username'];
-          
-          // Redirect superadmin to superadmin panel
-          if ($dbUser['role'] === 'superadmin') {
-            // Set superadmin session for superadmin panel
-            $_SESSION['superadmin'] = true;
-            $_SESSION['superadmin_email'] = $dbUser['email'] ?: 'superadmin@mikpay.com';
-            echo "<script>window.location='./superadmin/index.php'</script>";
-            exit;
-          }
-          
-          // Check subscription for regular users
-          if (function_exists('isUserSubscriptionActive')) {
-            if (!isUserSubscriptionActive($dbUser['id'])) {
-              // Subscription expired - redirect to subscription page
-              echo "<script>window.location='./?id=subscription&session=" . htmlspecialchars($user) . "'</script>";
-              exit;
-            }
-          }
-          
-          echo "<script>window.location='./admin.php?id=sessions'</script>";
-          exit;
-        }
-      } catch (Exception $e) {
-        // Database error, fallback to old login
-      }
-    }
-    
-    // Fallback to old admin login (for backward compatibility)
     if ($user == $useradm && $pass == decrypt($passadm)) {
       $_SESSION["mikpay"] = $user;
-      $_SESSION["user_role"] = 'admin';
       echo "<script>window.location='./admin.php?id=sessions'</script>";
       exit;
     }
@@ -199,64 +142,19 @@ if ($id == "login" || substr($url, -1) == "p") {
   include_once('./process/shutdown.php');
 } elseif ($id == "remove-session" && $session != "") {
   include_once('./include/menu.php');
-  
-  // Try to delete from database if user is logged in via database
-  $deletedFromDb = false;
-  if (isset($_SESSION["user_id"])) {
-    try {
-      if (file_exists('./include/database.php')) {
-        include_once('./include/database.php');
-        if (function_exists('deleteUserRouter')) {
-          if (deleteUserRouter($_SESSION["user_id"], $session)) {
-            $deletedFromDb = true;
-          }
-        }
-      }
-    } catch (Exception $e) {
-      // Fallback to config.php
-    }
+  $fc = file("./include/config.php" );
+  $f = fopen("./include/config.php", "w");
+  $q = "'";
+  $rem = '$data['.$q.$session.$q.']';
+  foreach ($fc as $line) {
+    if (!strstr($line, $rem))
+      fputs($f, $line);
   }
-  
-  // Fallback to config.php (backward compatibility)
-  if (!$deletedFromDb) {
-    $fc = file("./include/config.php" );
-    $f = fopen("./include/config.php", "w");
-    $q = "'";
-    $rem = '$data['.$q.$session.$q.']';
-    foreach ($fc as $line) {
-      if (!strstr($line, $rem))
-        fputs($f, $line);
-    }
-    fclose($f);
-  }
-  
+  fclose($f);
   echo "<script>window.location='./admin.php?id=sessions'</script>";
 } elseif ($id == "subscription") {
   include_once('./include/menu.php');
   include_once('./settings/subscription.php');
-} elseif ($id == "users") {
-  // Check if user is superadmin or admin
-  $isAdmin = false;
-  if (isset($_SESSION["user_id"])) {
-    try {
-      if (file_exists('./include/database.php')) {
-        include_once('./include/database.php');
-        if (function_exists('isAdmin')) {
-          $isAdmin = isAdmin($_SESSION["user_id"]);
-        }
-      }
-    } catch (Exception $e) {
-      // Continue
-    }
-  }
-  
-  if (!$isAdmin) {
-    echo "<script>window.location='./admin.php?id=sessions'</script>";
-    exit;
-  }
-  
-  include_once('./include/menu.php');
-  include_once('./admin/users.php');
 } elseif ($id == "logout") {
   include_once('./include/menu.php');
   echo "<b class='cl-w'><i class='fa fa-circle-o-notch fa-spin' style='font-size:24px'></i> Logout...</b>";

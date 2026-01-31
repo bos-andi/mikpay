@@ -159,9 +159,6 @@ if (!isset($_SESSION["mikpay"])) {
   } elseif ($id == "subscription") {
     $ssubscription = "active";
     $mpage = "Langganan";
-  } elseif ($id == "users") {
-    $susers = "active";
-    $mpage = "User Management";
   } elseif ($id == "uplogo") {
     $suplogo = "active";
     $mpage = $_upload_logo;
@@ -463,27 +460,7 @@ include('./info.php');
       $isAdmin = true;
     }
   }
-  // Check if user is admin (from database)
-  $isAdminMenu = false;
-  if (isset($_SESSION["user_id"])) {
-    try {
-      if (file_exists('../include/database.php')) {
-        include_once('../include/database.php');
-        if (function_exists('isAdmin')) {
-          $isAdminMenu = isAdmin($_SESSION["user_id"]);
-        }
-      }
-    } catch (Exception $e) {
-      // Continue
-    }
-  }
-  // Fallback to old admin check
-  if (!$isAdminMenu && isset($isAdmin) && $isAdmin) {
-    $isAdminMenu = true;
-  }
-  
-  if ($isAdminMenu): ?>
-  <a href="./admin.php?id=users" class="menu <?= $susers ?? '' ?>"> <i class="fa fa-users"></i> User Management </a>
+  if ($isAdmin): ?>
   <?php endif; ?>
   <a href="./?id=fonnte&session=<?= $session; ?>" class="menu <?= $sfonnte ?? '' ?>"> <i class="fa fa-whatsapp" style="color:#25D366;"></i> WhatsApp API </a>
   <a href="./?hotspot=uplogo&session=<?= $session; ?>" class="menu <?= $uplogo; ?>"> <i class="fa fa-upload "></i> <?= $_upload_logo ?> </a>

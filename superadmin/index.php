@@ -3,10 +3,7 @@
  * MIKPAY Super Admin Panel
  */
 session_start();
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+error_reporting(0);
 
 include('../include/superadmin.php');
 include('../include/subscription.php');
@@ -27,61 +24,18 @@ if (isset($_POST['login'])) {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     
-    // Try database login first
-    $dbLoginSuccess = false;
-    try {
-        if (file_exists('../include/database.php')) {
-            include_once('../include/database.php');
-            if (function_exists('verifyUser') && function_exists('isSuperAdmin')) {
-                // Try login with email or username
-                $dbUser = verifyUser($email, $password);
-                if (!$dbUser) {
-                    // Try with username if email fails
-                    $dbUser = verifyUser($email, $password);
-                }
-                
-                if ($dbUser && isSuperAdmin($dbUser['id'])) {
-                    $_SESSION['superadmin'] = true;
-                    $_SESSION['superadmin_email'] = $dbUser['email'] ?: $dbUser['username'];
-                    $_SESSION['user_id'] = $dbUser['id'];
-                    $_SESSION['user_role'] = 'superadmin';
-                    $_SESSION['mikpay'] = $dbUser['username'];
-                    $dbLoginSuccess = true;
-                    header('Location: index.php');
-                    exit;
-                }
-            }
-        }
-    } catch (Exception $e) {
-        // Fallback to old login
-    }
-    
-    // Fallback to old superadmin login
-    if (!$dbLoginSuccess && verifySuperAdmin($email, $password)) {
+    if (verifySuperAdmin($email, $password)) {
         $_SESSION['superadmin'] = true;
         $_SESSION['superadmin_email'] = $email;
         header('Location: index.php');
         exit;
-    } else if (!$dbLoginSuccess) {
+    } else {
         $loginError = 'Email atau password salah!';
     }
 }
 
-// Check if user is superadmin (from database or old system)
-$isSuperAdminSession = false;
-if (isset($_SESSION['superadmin']) && $_SESSION['superadmin'] === true) {
-    $isSuperAdminSession = true;
-} elseif (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin') {
-    // Set superadmin session if logged in from database
-    $_SESSION['superadmin'] = true;
-    if (!isset($_SESSION['superadmin_email'])) {
-        $_SESSION['superadmin_email'] = isset($_SESSION['user_username']) ? $_SESSION['user_username'] : 'superadmin@mikpay.com';
-    }
-    $isSuperAdminSession = true;
-}
-
 // Handle actions
-if ($isSuperAdminSession) {
+if (isSuperAdmin()) {
     // Approve payment
     if (isset($_POST['approve'])) {
         approvePayment($_POST['payment_id']);
@@ -96,64 +50,36 @@ if ($isSuperAdminSession) {
     }
     // Activate user
     if (isset($_POST['activate_user'])) {
-        if (function_exists('activateUser')) {
-            activateUser($_POST['user_id']);
-        } elseif (file_exists('../include/database.php')) {
-            include_once('../include/database.php');
-            if (function_exists('updateUser')) {
-                updateUser(intval($_POST['user_id']), array('status' => 'active'));
-            }
-        }
+        activateUser($_POST['user_id']);
         header('Location: index.php?tab=users&msg=activated');
         exit;
     }
     // Deactivate user
     if (isset($_POST['deactivate_user'])) {
         $reason = isset($_POST['reason']) ? $_POST['reason'] : '';
-        if (function_exists('deactivateUser')) {
-            deactivateUser($_POST['user_id'], $reason);
-        } elseif (file_exists('../include/database.php')) {
-            include_once('../include/database.php');
-            if (function_exists('updateUser')) {
-                updateUser(intval($_POST['user_id']), array('status' => 'inactive'));
-            }
-        }
+        deactivateUser($_POST['user_id'], $reason);
         header('Location: index.php?tab=users&msg=deactivated');
         exit;
     }
     // Delete user
     if (isset($_POST['delete_user'])) {
-        if (function_exists('deleteUser')) {
-            deleteUser($_POST['user_id']);
-        } elseif (file_exists('../include/database.php')) {
-            include_once('../include/database.php');
-            if (function_exists('deleteUser')) {
-                deleteUser(intval($_POST['user_id']));
-            }
-        }
+        deleteUser($_POST['user_id']);
         header('Location: index.php?tab=users&msg=deleted');
         exit;
     }
     // Add new user
     if (isset($_POST['add_user'])) {
         $userId = trim($_POST['new_user_id']);
-        if (function_exists('saveUser')) {
-            $userData = array(
-                'id' => $userId,
-                'name' => trim($_POST['new_user_name']),
-                'email' => trim($_POST['new_user_email']),
-                'phone' => trim($_POST['new_user_phone']),
-                'package' => $_POST['new_user_package'],
-                'status' => 'active',
-                'notes' => trim($_POST['new_user_notes'])
-            );
-            saveUser($userId, $userData);
-        } elseif (file_exists('../include/database.php')) {
-            include_once('../include/database.php');
-            if (function_exists('createUser')) {
-                createUser($userId, 'password123', trim($_POST['new_user_email']), trim($_POST['new_user_name']), trim($_POST['new_user_phone']), 'user');
-            }
-        }
+        $userData = array(
+            'id' => $userId,
+            'name' => trim($_POST['new_user_name']),
+            'email' => trim($_POST['new_user_email']),
+            'phone' => trim($_POST['new_user_phone']),
+            'package' => $_POST['new_user_package'],
+            'status' => 'active',
+            'notes' => trim($_POST['new_user_notes'])
+        );
+        saveUser($userId, $userData);
         header('Location: index.php?tab=users&msg=added');
         exit;
     }
@@ -175,87 +101,12 @@ if ($isSuperAdminSession) {
     }
 }
 
-// Initialize variables with error handling
-$payments = array();
-$stats = array('pending' => 0, 'approved' => 0, 'rejected' => 0, 'total_revenue' => 0);
-$subscription = array('status' => 'active', 'package' => 'pro', 'start_date' => date('Y-m-d'), 'end_date' => date('Y-m-d', strtotime('+30 days')));
-$packages = array();
-$users = array();
-$userStats = array('total' => 0, 'active' => 0, 'inactive' => 0);
-
-try {
-    if (function_exists('getPendingPayments')) {
-        $payments = getPendingPayments();
-    }
-} catch (Exception $e) {
-    error_log("Error getting payments: " . $e->getMessage());
-}
-
-try {
-    if (function_exists('getPaymentStats')) {
-        $stats = getPaymentStats();
-    }
-} catch (Exception $e) {
-    error_log("Error getting payment stats: " . $e->getMessage());
-}
-
-try {
-    if (function_exists('getSubscription')) {
-        $subscription = getSubscription();
-    }
-} catch (Exception $e) {
-    error_log("Error getting subscription: " . $e->getMessage());
-}
-
-try {
-    if (function_exists('getSubscriptionPackages')) {
-        $packages = getSubscriptionPackages();
-    }
-} catch (Exception $e) {
-    error_log("Error getting packages: " . $e->getMessage());
-}
-
-try {
-    // Try database getAllUsersDb first
-    if (file_exists('../include/database.php')) {
-        include_once('../include/database.php');
-        if (function_exists('getAllUsersDb')) {
-            $dbUsers = getAllUsersDb();
-            if (!empty($dbUsers)) {
-                $users = $dbUsers;
-            }
-        }
-    }
-    
-    // Fallback to subscription getAllUsers
-    if (empty($users) && function_exists('getAllUsers')) {
-        $users = getAllUsers();
-    }
-} catch (Exception $e) {
-    error_log("Error getting users: " . $e->getMessage());
-}
-
-try {
-    if (function_exists('getUserStats')) {
-        $userStats = getUserStats();
-    } else {
-        // Calculate stats manually
-        $userStats = array(
-            'total' => count($users),
-            'active' => 0,
-            'inactive' => 0
-        );
-        foreach ($users as $user) {
-            if (isset($user['status']) && $user['status'] === 'active') {
-                $userStats['active']++;
-            } else {
-                $userStats['inactive']++;
-            }
-        }
-    }
-} catch (Exception $e) {
-    error_log("Error getting user stats: " . $e->getMessage());
-}
+$payments = getPendingPayments();
+$stats = getPaymentStats();
+$subscription = getSubscription();
+$packages = getSubscriptionPackages();
+$users = getAllUsers();
+$userStats = getUserStats();
 
 $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
 ?>
@@ -780,7 +631,7 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
 </head>
 <body>
 
-<?php if (!$isSuperAdminSession): ?>
+<?php if (!isSuperAdmin()): ?>
 <!-- Login Form -->
 <div class="login-container">
     <div class="login-box">

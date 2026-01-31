@@ -36,40 +36,16 @@ if (!isset($_SESSION["mikpay"])) {
   }
 
   if ($id == "settings" && explode("-",$router)[0] == "new") {
-    // Try to save to database if user is logged in via database
-    $savedToDb = false;
-    if (isset($_SESSION["user_id"])) {
-      try {
-        if (file_exists('./include/database.php')) {
-          include_once('./include/database.php');
-          if (function_exists('saveUserRouter') && function_exists('getDBConnection')) {
-            $testConn = getDBConnection();
-            if ($testConn) {
-              // Save empty router to database
-              saveUserRouter($_SESSION["user_id"], $router, '', '', '', '', 'Rp', 10, 1, 10, '', 'inactive');
-              $savedToDb = true;
-            }
-          }
-        }
-      } catch (Exception $e) {
-        // Fallback to config.php
-      }
-    }
-    
-    // Fallback to config.php (backward compatibility)
-    if (!$savedToDb) {
-      $data = '$data';
-      $f = fopen('./include/config.php', 'a');
-      fwrite($f, "\n'$'data['".$router."'] = array ('1'=>'".$router."!','".$router."@|@','".$router."#|#','".$router."%','".$router."^','".$router."&Rp','".$router."*10','".$router."(1','".$router.")','".$router."=10','".$router."@!@disable');");
-      fclose($f);
-      $search = "'$'data";
-      $replace = (string)"$data";
-      $file = file("./include/config.php");
-      $content = file_get_contents("./include/config.php");
-      $newcontent = str_replace((string)$search, (string)$replace, "$content");
-      file_put_contents("./include/config.php", "$newcontent");
-    }
-    
+    $data = '$data';
+    $f = fopen('./include/config.php', 'a');
+    fwrite($f, "\n'$'data['".$router."'] = array ('1'=>'".$router."!','".$router."@|@','".$router."#|#','".$router."%','".$router."^','".$router."&Rp','".$router."*10','".$router."(1','".$router.")','".$router."=10','".$router."@!@disable');");
+    fclose($f);
+    $search = "'$'data";
+    $replace = (string)"$data";
+    $file = file("./include/config.php");
+    $content = file_get_contents("./include/config.php");
+    $newcontent = str_replace((string)$search, (string)$replace, "$content");
+    file_put_contents("./include/config.php", "$newcontent");
     echo "<script>window.location='./admin.php?id=settings&session=" . $router . "'</script>";
   }
 
