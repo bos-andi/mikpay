@@ -59,13 +59,32 @@ $getquickprint = $API->comm("/system/script/print", array("?name" => "$quickprin
   $prefix = $quickprintsource[5];
   $char = $quickprintsource[6];
   $profile = $quickprintsource[7];
-  $timelimit = $quickprintsource[8];
-  $datalimit = $quickprintsource[9];
-  $comment = $quickprintsource[10];
-  $getvalid = $quickprintsource[11];
-  $getprice = explode("_",$quickprintsource[12])[0];
-  $getsprice = explode("_",$quickprintsource[12])[1];
-  $userlock = $quickprintsource[13];
+  $timelimit = isset($quickprintsource[8]) ? $quickprintsource[8] : "";
+  $datalimit = isset($quickprintsource[9]) ? $quickprintsource[9] : "";
+  $comment = isset($quickprintsource[10]) ? $quickprintsource[10] : "";
+  $getvalid = isset($quickprintsource[11]) ? $quickprintsource[11] : "";
+  $getprice = isset($quickprintsource[12]) ? explode("_",$quickprintsource[12])[0] : "";
+  $getsprice = isset($quickprintsource[12]) ? explode("_",$quickprintsource[12])[1] : "";
+  $userlock = isset($quickprintsource[13]) ? $quickprintsource[13] : "";
+
+  // Validate and format timelimit
+  if ($timelimit == "" || $timelimit == "0") {
+    $timelimit = "";
+  } else {
+    $timelimit = trim($timelimit);
+  }
+  
+  // Validate and format datalimit
+  if ($datalimit == "" || $datalimit == "0") {
+    $datalimit = "";
+  } else {
+    $datalimit = trim($datalimit);
+  }
+  
+  // Validate server
+  if ($server == "" || $server == "all") {
+    $server = "all";
+  }
 
   if($getsprice == "" && $getprice != ""){
 	  $price = $getprice;
