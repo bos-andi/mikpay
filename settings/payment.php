@@ -278,14 +278,40 @@ if (isset($_POST['submit_payment'])) {
             <h4><i class="fa fa-university"></i> Rekening Pembayaran</h4>
             <div class="payment-methods">
                 <div class="payment-method">
-                    <strong><i class="fa fa-university"></i> Bank BCA</strong>
-                    <p>No. Rekening: 1234567890</p>
-                    <p>Atas Nama: MIKPAY</p>
+                    <strong style="color: #0066b3;"><i class="fa fa-university"></i> Bank BCA</strong>
+                    <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0 5px;">
+                        <p style="font-size: 20px; font-weight: 700; color: #1e293b; margin: 0;">1841343455</p>
+                        <button type="button" onclick="copyToClipboard('1841343455', this)" class="btn-copy" title="Salin" style="background: #4D44B5; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                    <p style="color: #64748b;">a.n. MUHAMMAD ANDI</p>
                 </div>
                 <div class="payment-method">
-                    <strong><i class="fa fa-university"></i> Bank Mandiri</strong>
-                    <p>No. Rekening: 0987654321</p>
-                    <p>Atas Nama: MIKPAY</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                        <span style="background: #00aae7; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;"><i class="fa fa-wallet"></i> DANA</span>
+                        <span style="background: #ee4d2d; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;"><i class="fa fa-wallet"></i> ShopeePay</span>
+                        <span style="background: #00aed6; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;"><i class="fa fa-wallet"></i> GoPay</span>
+                        <span style="background: #e82127; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;"><i class="fa fa-wallet"></i> LinkAja</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0 5px;">
+                        <p style="font-size: 20px; font-weight: 700; color: #1e293b; margin: 0;">0857-0700-4054</p>
+                        <button type="button" onclick="copyToClipboard('085707004054', this)" class="btn-copy" title="Salin" style="background: #4D44B5; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                    <p style="color: #64748b;">a.n. Muhammad Andi</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Info -->
+        <div class="payment-info-section" style="background: #f8fafc; padding: 20px; border-radius: 10px; margin-top: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <i class="fa fa-whatsapp" style="font-size: 32px; color: #25D366;"></i>
+                <div>
+                    <h4 style="margin: 0 0 5px; color: #1e293b;">Konfirmasi Pembayaran</h4>
+                    <p style="margin: 0; color: #475569;">Kirim bukti transfer ke WhatsApp: <a href="https://wa.me/6285707004054?text=Halo%20Admin%2C%20saya%20sudah%20transfer%20untuk%20langganan%20MIKPAY" target="_blank" style="color: #4D44B5; font-weight: 600;">0857-0700-4054</a></p>
                 </div>
             </div>
         </div>
@@ -299,3 +325,44 @@ if (isset($_POST['submit_payment'])) {
         </form>
     </div>
 </div>
+
+<script>
+function copyToClipboard(text, btn) {
+    // Try modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+            showCopiedFeedback(btn);
+        }).catch(function() {
+            fallbackCopy(text, btn);
+        });
+    } else {
+        fallbackCopy(text, btn);
+    }
+}
+
+function fallbackCopy(text, btn) {
+    var textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        showCopiedFeedback(btn);
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+    }
+    document.body.removeChild(textArea);
+}
+
+function showCopiedFeedback(btn) {
+    var originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fa fa-check"></i>';
+    btn.style.background = '#16a34a';
+    setTimeout(function() {
+        btn.innerHTML = originalHTML;
+        btn.style.background = '#4D44B5';
+    }, 2000);
+}
+</script>
