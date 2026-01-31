@@ -347,17 +347,17 @@ function saveAllUsers($users) {
 }
 
 /**
- * Add or update user
+ * Add or update user (only save to JSON, not config.php)
  */
 function saveUser($userId, $userData) {
-    $users = getAllUsers();
+    $jsonUsers = getJsonUsers();
     
     $userData['id'] = $userId;
     $userData['updated_at'] = date('Y-m-d H:i:s');
     
     // Find existing user
     $found = false;
-    foreach ($users as &$user) {
+    foreach ($jsonUsers as &$user) {
         if ($user['id'] === $userId) {
             $user = array_merge($user, $userData);
             $found = true;
@@ -367,10 +367,10 @@ function saveUser($userId, $userData) {
     
     if (!$found) {
         $userData['created_at'] = date('Y-m-d H:i:s');
-        $users[] = $userData;
+        $jsonUsers[] = $userData;
     }
     
-    saveAllUsers($users);
+    saveAllUsers($jsonUsers);
     return true;
 }
 
