@@ -231,9 +231,10 @@ function getUserByUsername($username) {
 }
 
 /**
- * Get all users (for admin)
+ * Get all users from database (for admin)
+ * Note: This function is named getAllUsersDb to avoid conflict with subscription.php
  */
-function getAllUsers($limit = 100, $offset = 0) {
+function getAllUsersDb($limit = 100, $offset = 0) {
     $conn = getDBConnection();
     if (!$conn) return array();
     
@@ -245,6 +246,28 @@ function getAllUsers($limit = 100, $offset = 0) {
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         error_log("Get all users error: " . $e->getMessage());
+        return array();
+    }
+}
+
+/**
+ * Get all users - wrapper that checks database first, then falls back to subscription.php
+ */
+if (!function_exists('getAllUsers')) {
+    function getAllUsers($limit = 100, $offset = 0) {
+        // Try database first
+        if (function_exists('getAllUsersDb')) {
+            $dbUsers = getAllUsersDb($limit, $offset);
+            if (!empty($dbUsers)) {
+                return $dbUsers;
+            }
+        }
+        
+        // Fallback to subscription.php getAllUsers if exists
+        if (function_exists('getAllUsers')) {
+            return getAllUsers();
+        }
+        
         return array();
     }
 }

@@ -87,8 +87,17 @@ if (isset($_POST['action'])) {
     }
 }
 
-// Get all users
-$users = getAllUsers();
+// Get all users (from database)
+$users = array();
+try {
+    if (function_exists('getAllUsersDb')) {
+        $users = getAllUsersDb();
+    } elseif (function_exists('getAllUsers')) {
+        $users = getAllUsers();
+    }
+} catch (Exception $e) {
+    error_log("Error getting users: " . $e->getMessage());
+}
 ?>
 
 <style>

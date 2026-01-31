@@ -216,11 +216,11 @@ try {
 }
 
 try {
-    // Try database getAllUsers first
-    if (function_exists('getAllUsers') && file_exists('../include/database.php')) {
+    // Try database getAllUsersDb first
+    if (file_exists('../include/database.php')) {
         include_once('../include/database.php');
-        if (function_exists('getAllUsers')) {
-            $dbUsers = getAllUsers();
+        if (function_exists('getAllUsersDb')) {
+            $dbUsers = getAllUsersDb();
             if (!empty($dbUsers)) {
                 $users = $dbUsers;
             }
