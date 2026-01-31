@@ -23,7 +23,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 if (!isset($_SESSION["mikpay"])) {
-  header("Location:../admin.php?id=login");
+  header("Location:./admin.php?id=login");
   exit;
 } else {
   
