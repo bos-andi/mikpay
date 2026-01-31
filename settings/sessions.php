@@ -791,29 +791,50 @@ if (!isset($_SESSION["mikpay"])) {
                 <div class="router-list">
                     <?php
                     $hasRouters = false;
-                    foreach (file('./include/config.php') as $line) {
-                        $value = explode("'", $line)[1];
-                        if ($value == "" || $value == "mikpay") {
-                        } else { 
-                            $hasRouters = true;
+                    // Improved parsing: use regex to find valid session definitions
+                    $configFile = './include/config.php';
+                    if (file_exists($configFile)) {
+                        $configLines = file($configFile);
+                        foreach ($configLines as $line) {
+                            // Match pattern: $data['SESSION_NAME'] = array(
+                            if (preg_match("/\\\$data\['([^']+)'\]\s*=\s*array\s*\(/", $line, $matches)) {
+                                $value = $matches[1];
+                                // Skip admin config and empty values
+                                if ($value == "" || $value == "mikpay") {
+                                    continue;
+                                }
+                                // Check if session exists in $data array and has required fields
+                                if (isset($data[$value]) && is_array($data[$value]) && isset($data[$value][4])) {
+                                    $hasRouters = true;
+                                    // Safely extract router name
+                                    $routerName = "Unknown Router";
+                                    if (isset($data[$value][4]) && strpos($data[$value][4], '%') !== false) {
+                                        $nameParts = explode('%', $data[$value][4]);
+                                        if (isset($nameParts[1]) && !empty($nameParts[1])) {
+                                            $routerName = $nameParts[1];
+                                        }
+                                    }
                     ?>
                             <div class="router-card">
-                                <div class="router-icon connect" id="<?= $value; ?>">
+                                <div class="router-icon connect" id="<?= htmlspecialchars($value); ?>">
                                     <i class="fa fa-server"></i>
                                 </div>
                                 <div class="router-info">
-                                    <h4><?= explode('%', $data[$value][4])[1]; ?></h4>
+                                    <h4><?= htmlspecialchars($routerName); ?></h4>
                                     <span class="router-session">
-                                        <i class="fa fa-tag"></i> <?= $value; ?>
+                                        <i class="fa fa-tag"></i> <?= htmlspecialchars($value); ?>
                                     </span>
                                 </div>
                                 <div class="router-actions">
-                                    <span class="router-btn btn-open connect" id="<?= $value; ?>"><i class="fa fa-play"></i> <?= $_open ?></span>
-                                    <a class="router-btn btn-edit" href="./admin.php?id=settings&session=<?= $value; ?>"><i class="fa fa-cog"></i> <?= $_edit ?></a>
-                                    <a class="router-btn btn-delete" href="javascript:void(0)" onclick="if(confirm('Are you sure to delete <?= $value ?>?')){loadpage('./admin.php?id=remove-session&session=<?= $value; ?>')}"><i class="fa fa-trash"></i></a>
+                                    <span class="router-btn btn-open connect" id="<?= htmlspecialchars($value); ?>"><i class="fa fa-play"></i> <?= $_open ?></span>
+                                    <a class="router-btn btn-edit" href="./admin.php?id=settings&session=<?= htmlspecialchars($value); ?>"><i class="fa fa-cog"></i> <?= $_edit ?></a>
+                                    <a class="router-btn btn-delete" href="javascript:void(0)" onclick="if(confirm('Are you sure to delete <?= htmlspecialchars($value); ?>?')){loadpage('./admin.php?id=remove-session&session=<?= htmlspecialchars($value); ?>')}"><i class="fa fa-trash"></i></a>
                                 </div>
                             </div>
-                    <?php }
+                    <?php 
+                                }
+                            }
+                        }
                     }
                     if (!$hasRouters) { ?>
                         <div class="empty-router">
