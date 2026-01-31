@@ -70,7 +70,10 @@ if (!isset($_SESSION["mikpay"])) {
     }
   }
 
-// time zone
+// time zone - set default if not set
+  if (!isset($_SESSION['timezone'])) {
+    $_SESSION['timezone'] = 'Asia/Jakarta';
+  }
   date_default_timezone_set($_SESSION['timezone']);
 
 // lang

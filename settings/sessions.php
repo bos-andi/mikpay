@@ -16,11 +16,23 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// hide all error
-error_reporting(0);
+// Enable error reporting for debugging (disable in production)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 if (!isset($_SESSION["mikpay"])) {
   header("Location:../admin.php?id=login");
+  exit;
 } else {
+  
+  // Include required files with error handling
+  try {
+    include('../include/config.php');
+    include('../include/readcfg.php');
+  } catch (Exception $e) {
+    die("Error loading configuration: " . $e->getMessage());
+  }
 
 // array color
   $color = array('1' => 'bg-blue', 'bg-indigo', 'bg-purple', 'bg-pink', 'bg-red', 'bg-yellow', 'bg-green', 'bg-teal', 'bg-cyan', 'bg-grey', 'bg-light-blue');

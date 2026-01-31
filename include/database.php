@@ -288,17 +288,31 @@ function createUserSubscription($userId, $package = 'trial', $days = 5) {
  * Check if user subscription is active
  */
 function isUserSubscriptionActive($userId) {
-    $user = getUserById($userId);
-    if (!$user) {
+    try {
+        $user = getUserById($userId);
+        if (!$user) {
+            return false;
+        }
+        
+        // Check trial first
+        if (!empty($user['trial_ends'])) {
+            $today = date('Y-m-d');
+            if ($today <= $user['trial_ends']) {
+                return true;
+            }
+        }
+        
+        // Check subscription
+        if (!empty($user['subscription_end'])) {
+            $today = date('Y-m-d');
+            return ($today <= $user['subscription_end']);
+        }
+        
+        return false;
+    } catch (Exception $e) {
+        error_log("Subscription check error: " . $e->getMessage());
         return false;
     }
-    
-    if (empty($user['subscription_end'])) {
-        return false;
-    }
-    
-    $today = date('Y-m-d');
-    return ($today <= $user['subscription_end']);
 }
 
 /**
