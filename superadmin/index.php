@@ -1346,5 +1346,22 @@ document.querySelectorAll('.modal').forEach(function(modal) {
 </script>
 <?php endif; ?>
 
+<script>
+function togglePassword(userId, password) {
+    var passElement = document.getElementById('pass-' + userId);
+    var iconElement = document.getElementById('icon-' + userId);
+    
+    if (passElement && iconElement) {
+        if (passElement.textContent === '••••••••') {
+            passElement.textContent = password;
+            iconElement.className = 'fa fa-eye-slash';
+        } else {
+            passElement.textContent = '••••••••';
+            iconElement.className = 'fa fa-eye';
+        }
+    }
+}
+</script>
+
 </body>
 </html>
