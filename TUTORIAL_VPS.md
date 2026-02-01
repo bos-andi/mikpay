@@ -201,13 +201,26 @@ Edit file `config.php` dan isi dengan:
 
 Di VPS, jalankan salah satu command berikut:
 ```bash
-# Via PHP
+# Cara 1: Gunakan tool encoder yang sudah disediakan
+cd /var/www/mikpay/deploy
+php encode-password.php your-password
+
+# Cara 2: Via PHP langsung
 php -r "echo base64_encode('your-password');"
 
-# Via Bash
+# Cara 3: Via Bash
 echo -n 'your-password' | base64
 
-# Atau gunakan tool online: https://www.base64encode.org/
+# Cara 4: Via Online tool
+# Kunjungi: https://www.base64encode.org/
+```
+
+**Contoh penggunaan encoder tool:**
+```bash
+cd /var/www/mikpay/deploy
+php encode-password.php admin123
+# Output: admin123 -> YWRtaW4xMjM=
+# Gunakan: ROUTER1#|#YWRtaW4xMjM=
 ```
 
 **Contoh Konfigurasi Router:**
