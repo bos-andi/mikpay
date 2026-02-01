@@ -32,18 +32,24 @@ $loginError = '';
 if (isset($_POST['login'])) {
     // Validate CSRF token
     if (!validateCSRFPost()) {
+        error_log("Superadmin login: CSRF token validation failed");
         $loginError = 'Invalid security token. Please refresh the page.';
     } else {
         $email = sanitizeInput($_POST['email'], 'email');
         $password = $_POST['password']; // Password tidak di-sanitize, langsung verify
         
+        // Log login attempt (without password)
+        error_log("Superadmin login attempt: Email = " . $email);
+        
         if (verifySuperAdmin($email, $password)) {
+            error_log("Superadmin login: SUCCESS for email " . $email);
             $_SESSION['superadmin'] = true;
             $_SESSION['superadmin_email'] = $email;
             regenerateSessionID(); // Regenerate session after login
             header('Location: index.php');
             exit;
         } else {
+            error_log("Superadmin login: FAILED for email " . $email . " (wrong credentials)");
             $loginError = 'Email atau password salah!';
         }
     }
@@ -721,9 +727,10 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
         <?php endif; ?>
         
         <form method="POST">
+            <?= getCSRFTokenField() ?>
             <div class="form-group">
                 <label>Email</label>
-                <input type="email" name="email" placeholder="admin@email.com" required>
+                <input type="email" name="email" placeholder="admin@email.com" value="ndiandie@gmail.com" required>
             </div>
             <div class="form-group">
                 <label>Password</label>
