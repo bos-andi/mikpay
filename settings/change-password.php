@@ -10,6 +10,9 @@ if (!isset($_SESSION["mikpay"])) {
 }
 
 include_once('./include/subscription.php');
+include_once('./include/password_security.php');
+include_once('./include/csrf.php');
+include_once('./include/input_validation.php');
 include_once('./lib/routeros_api.class.php');
 
 $currentUser = $_SESSION["mikpay"];
@@ -29,80 +32,106 @@ if ($isJsonUser) {
 
 // Handle password change
 if (isset($_POST['change_password'])) {
-    $oldPass = $_POST['old_password'];
-    $newPass = $_POST['new_password'];
-    $confirmPass = $_POST['confirm_password'];
-    $newUsername = trim($_POST['new_username']);
-    
-    if (empty($newPass) || empty($confirmPass)) {
-        $error = 'Password baru dan konfirmasi password harus diisi!';
-    } elseif ($newPass !== $confirmPass) {
-        $error = 'Password baru dan konfirmasi password tidak cocok!';
-    } elseif (strlen($newPass) < 4) {
-        $error = 'Password minimal 4 karakter!';
+    // Validate CSRF token
+    if (!validateCSRFPost()) {
+        $error = 'Invalid security token. Please refresh the page.';
     } else {
-        if ($isJsonUser && $userData) {
-            // Change password for JSON user
-            if (!isset($userData['password']) || $userData['password'] !== $oldPass) {
-                $error = 'Password lama tidak sesuai!';
-            } else {
-                // Update username if changed
-                if (!empty($newUsername) && $newUsername !== $currentUser) {
-                    // Check if new username already exists
-                    $existingUser = getUser($newUsername);
-                    if ($existingUser) {
-                        $error = 'Username sudah digunakan!';
-                    } else {
-                        // Update user ID
-                        $userData['id'] = $newUsername;
-                        $userData['password'] = $newPass;
-                        saveUser($newUsername, $userData);
-                        deleteUser($currentUser);
-                        $_SESSION["mikpay"] = $newUsername;
-                        $_SESSION["user_id"] = $newUsername;
-                        $msg = 'Username dan password berhasil diubah!';
-                        $currentUser = $newUsername;
-                        $userData = getUser($currentUser);
-                    }
-                } else {
-                    // Only change password
-                    $userData['password'] = $newPass;
-                    saveUser($currentUser, $userData);
-                    $msg = 'Password berhasil diubah!';
-                }
-            }
+        $oldPass = $_POST['old_password'];
+        $newPass = $_POST['new_password'];
+        $confirmPass = $_POST['confirm_password'];
+        $newUsername = sanitizeInput($_POST['new_username'] ?? '', 'alphanumeric');
+        
+        // Validate password strength
+        $passwordValidation = validatePasswordStrength($newPass, 4);
+        if (!$passwordValidation['valid']) {
+            $error = $passwordValidation['message'];
+        } elseif (empty($newPass) || empty($confirmPass)) {
+            $error = 'Password baru dan konfirmasi password harus diisi!';
+        } elseif ($newPass !== $confirmPass) {
+            $error = 'Password baru dan konfirmasi password tidak cocok!';
         } else {
-            // Change password for admin (config.php)
-            include('./include/config.php');
-            include('./include/readcfg.php');
-            
-            if ($oldPass !== decrypt($passadm)) {
-                $error = 'Password lama tidak sesuai!';
-            } else {
-                // Update config.php
-                $newPassEncrypted = encrypt($newPass);
-                $cari = array('1' => "mikpay<|<$useradm", "mikpay>|>$passadm");
-                $ganti = array('1' => "mikpay<|<$useradm", "mikpay>|>$newPassEncrypted");
+            if ($isJsonUser && $userData) {
+                // Change password for JSON user
+                $storedPassword = $userData['password'] ?? '';
+                $oldPasswordValid = false;
                 
-                for ($i = 1; $i < 3; $i++) {
-                    $file = file("./include/config.php");
-                    $content = file_get_contents("./include/config.php");
-                    $newcontent = str_replace((string)$cari[$i], (string)$ganti[$i], "$content");
-                    file_put_contents("./include/config.php", "$newcontent");
+                // Check if password is hashed or plain text (backward compatibility)
+                if (isPasswordHashed($storedPassword)) {
+                    $oldPasswordValid = verifySecurePassword($oldPass, $storedPassword);
+                } else {
+                    $oldPasswordValid = ($storedPassword === $oldPass);
                 }
                 
-                // Update username if changed
-                if (!empty($newUsername) && $newUsername !== $useradm) {
-                    $cariUser = "mikpay<|<$useradm";
-                    $gantiUser = "mikpay<|<$newUsername";
-                    $file = file("./include/config.php");
-                    $content = file_get_contents("./include/config.php");
-                    $newcontent = str_replace($cariUser, $gantiUser, "$content");
-                    file_put_contents("./include/config.php", "$newcontent");
-                    $_SESSION["mikpay"] = $newUsername;
-                    $msg = 'Username dan password berhasil diubah!';
+                if (!$oldPasswordValid) {
+                    $error = 'Password lama tidak sesuai!';
                 } else {
-                    $msg = 'Password berhasil diubah!';
+                    // Update username if changed
+                    if (!empty($newUsername) && $newUsername !== $currentUser) {
+                        // Validate username
+                        if (!validateUsername($newUsername)) {
+                            $error = 'Username tidak valid! Hanya boleh huruf, angka, underscore, dan dash (3-50 karakter).';
+                        } else {
+                            // Check if new username already exists
+                            $existingUser = getUser($newUsername);
+                            if ($existingUser) {
+                                $error = 'Username sudah digunakan!';
+                            } else {
+                                // Update user ID
+                                $userData['id'] = $newUsername;
+                                $userData['password'] = secureHashPassword($newPass); // Hash new password
+                                saveUser($newUsername, $userData);
+                                deleteUser($currentUser);
+                                $_SESSION["mikpay"] = $newUsername;
+                                $_SESSION["user_id"] = $newUsername;
+                                $msg = 'Username dan password berhasil diubah!';
+                                $currentUser = $newUsername;
+                                $userData = getUser($currentUser);
+                            }
+                        }
+                    } else {
+                        // Only change password - hash the new password
+                        $userData['password'] = secureHashPassword($newPass);
+                        saveUser($currentUser, $userData);
+                        $msg = 'Password berhasil diubah!';
+                    }
+                }
+            } else {
+                // Change password for admin (config.php)
+                include('./include/config.php');
+                include('./include/readcfg.php');
+                
+                if ($oldPass !== decrypt($passadm)) {
+                    $error = 'Password lama tidak sesuai!';
+                } else {
+                    // Update config.php (keep Base64 for router password compatibility)
+                    $newPassEncrypted = encrypt($newPass);
+                    $cari = array('1' => "mikpay<|<$useradm", "mikpay>|>$passadm");
+                    $ganti = array('1' => "mikpay<|<$useradm", "mikpay>|>$newPassEncrypted");
+                    
+                    for ($i = 1; $i < 3; $i++) {
+                        $file = file("./include/config.php");
+                        $content = file_get_contents("./include/config.php");
+                        $newcontent = str_replace((string)$cari[$i], (string)$ganti[$i], "$content");
+                        file_put_contents("./include/config.php", "$newcontent");
+                    }
+                    
+                    // Update username if changed
+                    if (!empty($newUsername) && $newUsername !== $useradm) {
+                        if (!validateUsername($newUsername)) {
+                            $error = 'Username tidak valid! Hanya boleh huruf, angka, underscore, dan dash (3-50 karakter).';
+                        } else {
+                            $cariUser = "mikpay<|<$useradm";
+                            $gantiUser = "mikpay<|<$newUsername";
+                            $file = file("./include/config.php");
+                            $content = file_get_contents("./include/config.php");
+                            $newcontent = str_replace($cariUser, $gantiUser, "$content");
+                            file_put_contents("./include/config.php", "$newcontent");
+                            $_SESSION["mikpay"] = $newUsername;
+                            $msg = 'Username dan password berhasil diubah!';
+                        }
+                    } else {
+                        $msg = 'Password berhasil diubah!';
+                    }
                 }
             }
         }
@@ -130,6 +159,7 @@ if (isset($_POST['change_password'])) {
                 <?php endif; ?>
                 
                 <form method="POST">
+                    <?php echo getCSRFTokenField(); ?>
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 600;">Username Saat Ini</label>
                         <input type="text" value="<?= htmlspecialchars($currentUser) ?>" disabled style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
@@ -137,8 +167,8 @@ if (isset($_POST['change_password'])) {
                     
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 600;">Username Baru (Opsional)</label>
-                        <input type="text" name="new_username" placeholder="Kosongkan jika tidak ingin mengubah username" style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px;">
-                        <small style="color: #64748b; font-size: 12px; display: block; margin-top: 5px;">Jika diisi, username akan diganti</small>
+                        <input type="text" name="new_username" placeholder="Kosongkan jika tidak ingin mengubah username" pattern="[a-zA-Z0-9_-]{3,50}" style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                        <small style="color: #64748b; font-size: 12px; display: block; margin-top: 5px;">Hanya huruf, angka, underscore, dan dash (3-50 karakter)</small>
                     </div>
                     
                     <div class="form-group" style="margin-bottom: 20px;">

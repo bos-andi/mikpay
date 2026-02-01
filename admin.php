@@ -15,9 +15,20 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-session_start();
-// hide all error
-error_reporting(0);
+// Include security helpers
+include_once('./include/session_security.php');
+include_once('./include/password_security.php');
+include_once('./include/csrf.php');
+include_once('./include/input_validation.php');
+
+// Initialize secure session
+initSecureSession();
+
+// hide all error (but log them)
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/logs/php_errors.log');
 
 ob_start("ob_gzhandler");
 
@@ -70,38 +81,73 @@ include_once('./lib/formatbytesbites.php');
 <?php
 if ($id == "login" || substr($url, -1) == "p") {
   if (isset($_POST['login'])) {
-    $user = $_POST['user'];
-    $pass = $_POST['pass'];
-    
-    // Try admin login first (from config.php)
-    if ($user == $useradm && $pass == decrypt($passadm)) {
-      $_SESSION["mikpay"] = $user;
-      echo "<script>window.location='./admin.php?id=sessions'</script>";
-      exit;
-    }
-    
-    // Try user login from users.json
-    include_once('./include/subscription.php');
-    $jsonUser = getUser($user);
-    if ($jsonUser && isset($jsonUser['password']) && $jsonUser['password'] === $pass) {
-      // Check if user is active
-      if (isset($jsonUser['status']) && $jsonUser['status'] === 'active') {
+    // Validate CSRF token
+    if (!validateCSRFPost()) {
+      $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Invalid security token. Please refresh the page.</div>';
+    } else {
+      $user = sanitizeInput($_POST['user'], 'alphanumeric');
+      $pass = $_POST['pass']; // Password tidak di-sanitize, langsung verify
+      
+      // Try admin login first (from config.php)
+      if ($user == $useradm && $pass == decrypt($passadm)) {
         $_SESSION["mikpay"] = $user;
-        $_SESSION["user_id"] = $user;
-        $_SESSION["user_from_json"] = true;
+        regenerateSessionID(); // Regenerate session after login
         echo "<script>window.location='./admin.php?id=sessions'</script>";
         exit;
-      } else {
-        $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Akun Anda telah dinonaktifkan.</div>';
       }
-    } else {
-      $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Invalid username or password.</div>';
+      
+      // Try user login from users.json
+      include_once('./include/subscription.php');
+      $jsonUser = getUser($user);
+      if ($jsonUser && isset($jsonUser['password'])) {
+        $storedPassword = $jsonUser['password'];
+        
+        // Check if password is hashed or plain text (for backward compatibility)
+        $passwordValid = false;
+        if (isPasswordHashed($storedPassword)) {
+          // Password is hashed, use password_verify
+          $passwordValid = verifySecurePassword($pass, $storedPassword);
+        } else {
+          // Old plain text password, compare directly (backward compatibility)
+          $passwordValid = ($storedPassword === $pass);
+          
+          // Auto-migrate to hash if password matches
+          if ($passwordValid) {
+            $jsonUser['password'] = secureHashPassword($pass);
+            saveUser($user, $jsonUser);
+          }
+        }
+        
+        if ($passwordValid) {
+          // Check if user is active
+          if (isset($jsonUser['status']) && $jsonUser['status'] === 'active') {
+            $_SESSION["mikpay"] = $user;
+            $_SESSION["user_id"] = $user;
+            $_SESSION["user_from_json"] = true;
+            regenerateSessionID(); // Regenerate session after login
+            echo "<script>window.location='./admin.php?id=sessions'</script>";
+            exit;
+          } else {
+            $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Akun Anda telah dinonaktifkan.</div>';
+          }
+        } else {
+          $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Invalid username or password.</div>';
+        }
+      } else {
+        $error = '<div style="width: 100%; padding:5px 0px 5px 0px; border-radius:5px;" class="bg-danger"><i class="fa fa-ban"></i> Alert!<br>Invalid username or password.</div>';
+      }
     }
   }
 
   include_once('./include/login.php');
 } elseif (!isset($_SESSION["mikpay"])) {
   echo "<script>window.location='./admin.php?id=login'</script>";
+  exit;
+} elseif (!checkSessionValidity()) {
+  // Session expired or invalid
+  destroySecureSession();
+  echo "<script>window.location='./admin.php?id=login&msg=timeout'</script>";
+  exit;
 } elseif (substr($url, -1) == "/" || substr($url, -4) == ".php") {
   echo "<script>window.location='./admin.php?id=sessions'</script>";
 

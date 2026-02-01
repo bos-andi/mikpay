@@ -2,8 +2,19 @@
 /*
  * MIKPAY Super Admin Panel
  */
-session_start();
-error_reporting(0);
+// Include security helpers
+include_once('../include/session_security.php');
+include_once('../include/password_security.php');
+include_once('../include/csrf.php');
+include_once('../include/input_validation.php');
+
+// Initialize secure session
+initSecureSession();
+
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../logs/php_errors.log');
 
 include('../include/superadmin.php');
 include('../include/subscription.php');
@@ -19,80 +30,122 @@ if (isset($_GET['logout'])) {
 // Handle login
 $loginError = '';
 if (isset($_POST['login'])) {
-    $email = trim($_POST['email']);
-    $password = $_POST['password'];
-    
-    if (verifySuperAdmin($email, $password)) {
-        $_SESSION['superadmin'] = true;
-        $_SESSION['superadmin_email'] = $email;
-        header('Location: index.php');
-        exit;
+    // Validate CSRF token
+    if (!validateCSRFPost()) {
+        $loginError = 'Invalid security token. Please refresh the page.';
     } else {
-        $loginError = 'Email atau password salah!';
+        $email = sanitizeInput($_POST['email'], 'email');
+        $password = $_POST['password']; // Password tidak di-sanitize, langsung verify
+        
+        if (verifySuperAdmin($email, $password)) {
+            $_SESSION['superadmin'] = true;
+            $_SESSION['superadmin_email'] = $email;
+            regenerateSessionID(); // Regenerate session after login
+            header('Location: index.php');
+            exit;
+        } else {
+            $loginError = 'Email atau password salah!';
+        }
     }
+}
+
+// Check session validity for logged in users
+if (isSuperAdmin() && !checkSessionValidity()) {
+    destroySecureSession();
+    header('Location: index.php?msg=timeout');
+    exit;
 }
 
 // Handle actions
 if (isSuperAdmin()) {
+    // Validate CSRF for all POST actions
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['login'])) {
+        if (!validateCSRFPost()) {
+            header('Location: index.php?msg=security');
+            exit;
+        }
+    }
+    
     // Approve payment
     if (isset($_POST['approve'])) {
-        approvePayment($_POST['payment_id']);
+        $paymentId = sanitizeInput($_POST['payment_id'], 'string');
+        approvePayment($paymentId);
         header('Location: index.php?tab=payments&msg=approved');
         exit;
     }
     // Reject payment
     if (isset($_POST['reject'])) {
-        rejectPayment($_POST['payment_id'], isset($_POST['reason']) ? $_POST['reason'] : '');
+        $paymentId = sanitizeInput($_POST['payment_id'], 'string');
+        $reason = sanitizeInput($_POST['reason'] ?? '', 'string');
+        rejectPayment($paymentId, $reason);
         header('Location: index.php?tab=payments&msg=rejected');
         exit;
     }
     // Activate user
     if (isset($_POST['activate_user'])) {
-        activateUser($_POST['user_id']);
+        $userId = sanitizeInput($_POST['user_id'], 'string');
+        activateUser($userId);
         header('Location: index.php?tab=users&msg=activated');
         exit;
     }
     // Deactivate user
     if (isset($_POST['deactivate_user'])) {
-        $reason = isset($_POST['reason']) ? $_POST['reason'] : '';
-        deactivateUser($_POST['user_id'], $reason);
+        $userId = sanitizeInput($_POST['user_id'], 'string');
+        $reason = sanitizeInput($_POST['reason'] ?? '', 'string');
+        deactivateUser($userId, $reason);
         header('Location: index.php?tab=users&msg=deactivated');
         exit;
     }
     // Delete user
     if (isset($_POST['delete_user'])) {
-        deleteUser($_POST['user_id']);
+        $userId = sanitizeInput($_POST['user_id'], 'string');
+        deleteUser($userId);
         header('Location: index.php?tab=users&msg=deleted');
         exit;
     }
     // Add new user
     if (isset($_POST['add_user'])) {
-        $userId = trim($_POST['new_user_id']);
-        $password = trim($_POST['new_user_password']);
+        $userId = sanitizeInput($_POST['new_user_id'], 'alphanumeric');
+        $password = $_POST['new_user_password']; // Password tidak di-sanitize, akan di-hash
         
-        if (empty($password)) {
+        // Validate username
+        if (!validateUsername($userId)) {
+            $loginError = 'ID User tidak valid! Hanya boleh huruf, angka, underscore, dan dash (3-50 karakter).';
+        } elseif (empty($password)) {
             $loginError = 'Password harus diisi!';
         } else {
-            // Set trial 5 hari
-            $trialStartDate = date('Y-m-d');
-            $trialEndDate = date('Y-m-d', strtotime('+5 days'));
-            
-            $userData = array(
-                'id' => $userId,
-                'name' => trim($_POST['new_user_name']),
-                'email' => trim($_POST['new_user_email']),
-                'phone' => trim($_POST['new_user_phone']),
-                'package' => 'trial', // Set to trial package
-                'password' => $password, // Store password (will be used for login)
-                'status' => 'active',
-                'subscription_start' => $trialStartDate,
-                'subscription_end' => $trialEndDate,
-                'subscription_status' => 'trial',
-                'notes' => trim($_POST['new_user_notes'])
-            );
-            saveUser($userId, $userData);
-            header('Location: index.php?tab=users&msg=added');
-            exit;
+            // Validate password strength
+            $passwordValidation = validatePasswordStrength($password, 4);
+            if (!$passwordValidation['valid']) {
+                $loginError = $passwordValidation['message'];
+            } else {
+                // Check if user already exists
+                $existingUser = getUser($userId);
+                if ($existingUser) {
+                    $loginError = 'ID User sudah digunakan!';
+                } else {
+                    // Set trial 5 hari
+                    $trialStartDate = date('Y-m-d');
+                    $trialEndDate = date('Y-m-d', strtotime('+5 days'));
+                    
+                    $userData = array(
+                        'id' => $userId,
+                        'name' => sanitizeInput($_POST['new_user_name'] ?? '', 'string'),
+                        'email' => sanitizeInput($_POST['new_user_email'] ?? '', 'email'),
+                        'phone' => sanitizeInput($_POST['new_user_phone'] ?? '', 'string'),
+                        'package' => 'trial', // Set to trial package
+                        'password' => secureHashPassword($password), // Hash password sebelum disimpan
+                        'status' => 'active',
+                        'subscription_start' => $trialStartDate,
+                        'subscription_end' => $trialEndDate,
+                        'subscription_status' => 'trial',
+                        'notes' => sanitizeInput($_POST['new_user_notes'] ?? '', 'string')
+                    );
+                    saveUser($userId, $userData);
+                    header('Location: index.php?tab=users&msg=added');
+                    exit;
+                }
+            }
         }
     }
     // Update subscription manually
@@ -1021,14 +1074,17 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
                 <button class="modal-close" onclick="closeModal('addUserModal')">&times;</button>
             </div>
             <form method="POST">
+                <?php echo getCSRFTokenField(); ?>
                 <div class="modal-body">
                     <div class="form-group">
                         <label>ID User *</label>
-                        <input type="text" name="new_user_id" placeholder="Contoh: user001" required>
+                        <input type="text" name="new_user_id" placeholder="Contoh: user001" pattern="[a-zA-Z0-9_-]{3,50}" required>
+                        <small style="color: #64748b; font-size: 12px; display: block; margin-top: 5px;">Hanya huruf, angka, underscore, dan dash (3-50 karakter)</small>
                     </div>
                     <div class="form-group">
                         <label>Password *</label>
-                        <input type="password" name="new_user_password" placeholder="Masukkan password" required>
+                        <input type="password" name="new_user_password" placeholder="Masukkan password" minlength="4" required>
+                        <small style="color: #64748b; font-size: 12px; display: block; margin-top: 5px;">Minimal 4 karakter</small>
                     </div>
                     <div class="form-group">
                         <label>Nama Lengkap</label>

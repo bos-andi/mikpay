@@ -416,6 +416,13 @@ $loginLogo = getLogoPath('', './', false);
         <!-- Login Form -->
         <div class="login-form-container">
             <form autocomplete="off" action="" method="post">
+                <?php 
+                // Include CSRF helper
+                if (!function_exists('getCSRFTokenField')) {
+                    include_once('./include/csrf.php');
+                }
+                echo getCSRFTokenField(); 
+                ?>
                 <div class="login-input-group">
                     <input type="text" name="user" id="_username" class="login-input" placeholder="Username" required autofocus>
                     <i class="fa fa-user login-input-icon"></i>

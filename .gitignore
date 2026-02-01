@@ -23,6 +23,7 @@ desktop.ini
 
 # Log files
 *.log
+logs/
 
 # Temporary files
 voucher/temp.php

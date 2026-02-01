@@ -15,9 +15,17 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-session_start();
-// hide all error
-error_reporting(0);
+// Include security helpers
+include_once('./include/session_security.php');
+
+// Initialize secure session
+initSecureSession();
+
+// hide all error (but log them)
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/logs/php_errors.log');
 // check url
 
 ob_start("ob_gzhandler");
@@ -32,10 +40,22 @@ $session = $_GET['session'];
 if (!isset($_SESSION["mikpay"])) {
   header("Location:./admin.php?id=login");
   exit;
+} elseif (!checkSessionValidity()) {
+  // Session expired or invalid
+  destroySecureSession();
+  header("Location:./admin.php?id=login&msg=timeout");
+  exit;
 } elseif (empty($session)) {
   echo "<script>window.location='./admin.php?id=sessions'</script>";
   exit;
 } else {
+  // Validate session name
+  include_once('./include/input_validation.php');
+  if (!validateSessionName($session)) {
+    header("Location:./admin.php?id=sessions");
+    exit;
+  }
+  
   $_SESSION["$session"] = $session;
   $setsession = $_SESSION["$session"];
 
