@@ -175,7 +175,9 @@ date_default_timezone_set($_SESSION['timezone']);
 				$time = date("H:i:s");
 				$year = date("Y");
 				$month = strtolower(date("M"));
-				$scriptname = $date . "-|-" . $time . "-|-" . $u[$i] . "-|-" . $getprice . "-|-" . $u[$i] . "-|-" . $u[$i] . "-|-" . $uvalid . "-|-" . $profile . "-|-" . $adcomment;
+				$address = $u[$i]; // username as address
+				$mac = $u[$i]; // username as mac
+				$scriptname = $date . "-|-" . $time . "-|-" . $u[$i] . "-|-" . $getprice . "-|-" . $address . "-|-" . $mac . "-|-" . $uvalid . "-|-" . $profile . "-|-" . $adcomment;
 				$API->comm("/system/script/add", array(
 					"name" => $scriptname,
 					"owner" => $month . $year,
@@ -272,7 +274,9 @@ date_default_timezone_set($_SESSION['timezone']);
 				$time = date("H:i:s");
 				$year = date("Y");
 				$month = strtolower(date("M"));
-				$scriptname = $date . "-|-" . $time . "-|-" . $u[$i] . "-|-" . $getprice . "-|-" . $u[$i] . "-|-" . $u[$i] . "-|-" . $uvalid . "-|-" . $profile . "-|-" . $adcomment;
+				$address = $u[$i]; // username as address
+				$mac = $u[$i]; // username as mac
+				$scriptname = $date . "-|-" . $time . "-|-" . $u[$i] . "-|-" . $getprice . "-|-" . $address . "-|-" . $mac . "-|-" . $uvalid . "-|-" . $profile . "-|-" . $adcomment;
 				$API->comm("/system/script/add", array(
 					"name" => $scriptname,
 					"owner" => $month . $year,
