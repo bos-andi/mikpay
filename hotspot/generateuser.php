@@ -169,6 +169,19 @@ date_default_timezone_set($_SESSION['timezone']);
 				}
 				
 				$API->comm("/ip/hotspot/user/add", $params);
+				
+				// Save to MikroTik script for selling report
+				$date = date("M/d/Y");
+				$time = date("H:i:s");
+				$year = date("Y");
+				$month = strtolower(date("M"));
+				$scriptname = $date . "-|-" . $time . "-|-" . $u[$i] . "-|-" . $getprice . "-|-" . $u[$i] . "-|-" . $u[$i] . "-|-" . $uvalid . "-|-" . $profile . "-|-" . $adcomment;
+				$API->comm("/system/script/add", array(
+					"name" => $scriptname,
+					"owner" => $month . $year,
+					"source" => $date,
+					"comment" => "mikpay"
+				));
 			}
 		}
 
@@ -253,6 +266,19 @@ date_default_timezone_set($_SESSION['timezone']);
 				}
 				
 				$API->comm("/ip/hotspot/user/add", $params);
+				
+				// Save to MikroTik script for selling report
+				$date = date("M/d/Y");
+				$time = date("H:i:s");
+				$year = date("Y");
+				$month = strtolower(date("M"));
+				$scriptname = $date . "-|-" . $time . "-|-" . $u[$i] . "-|-" . $getprice . "-|-" . $u[$i] . "-|-" . $u[$i] . "-|-" . $uvalid . "-|-" . $profile . "-|-" . $adcomment;
+				$API->comm("/system/script/add", array(
+					"name" => $scriptname,
+					"owner" => $month . $year,
+					"source" => $date,
+					"comment" => "mikpay"
+				));
 			}
 		}
 
