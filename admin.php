@@ -249,16 +249,22 @@ if ($id == "login" || substr($url, -1) == "p") {
     exit;
   }
   
+  // Pattern untuk mencari baris router (format: $data['SESSION_NAME'] = array (...))
   $q = "'";
   $rem = '$data['.$q.$session.$q.']';
   $removed = false;
   
-  foreach ($fc as $line) {
-    if (!strstr($line, $rem)) {
-      fputs($f, $line);
-    } else {
+  foreach ($fc as $lineNum => $line) {
+    // Cek apakah baris ini mengandung router yang akan dihapus
+    // Format bisa: $data['SESSION_NAME'] = array (...)
+    if (strpos($line, $rem) !== false) {
+      // Baris ini adalah router yang akan dihapus, skip
       $removed = true;
+      continue;
     }
+    
+    // Tulis baris jika bukan router yang akan dihapus
+    fputs($f, $line);
   }
   
   fclose($f);
@@ -266,9 +272,11 @@ if ($id == "login" || substr($url, -1) == "p") {
   if ($removed) {
     logRouterDelete($session, true);
     echo "<script>alert('Router session deleted successfully!'); window.location='./admin.php?id=sessions'</script>";
+    exit;
   } else {
     logRouterDelete($session, false, 'Router session not found in config');
-    echo "<script>alert('Router session not found!'); window.location='./admin.php?id=sessions'</script>";
+    echo "<script>alert('Router session not found in config file!'); window.location='./admin.php?id=sessions'</script>";
+    exit;
   }
 } elseif ($id == "subscription") {
   include_once('./include/menu.php');

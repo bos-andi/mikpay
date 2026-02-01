@@ -841,7 +841,7 @@ if (!isset($_SESSION["mikpay"])) {
                                 <div class="router-actions">
                                     <span class="router-btn btn-open connect" id="<?= htmlspecialchars($value); ?>"><i class="fa fa-play"></i> <?= $_open ?></span>
                                     <a class="router-btn btn-edit" href="./admin.php?id=settings&session=<?= htmlspecialchars($value); ?>"><i class="fa fa-cog"></i> <?= $_edit ?></a>
-                                    <a class="router-btn btn-delete" href="javascript:void(0)" onclick="if(confirm('Are you sure to delete <?= htmlspecialchars($value); ?>?')){loadpage('./admin.php?id=remove-session&session=<?= htmlspecialchars($value); ?>')}"><i class="fa fa-trash"></i></a>
+                                    <a class="router-btn btn-delete" href="javascript:void(0)" onclick="if(confirm('Are you sure to delete <?= htmlspecialchars($value); ?>?')){window.location.href='./admin.php?id=remove-session&session=<?= htmlspecialchars($value); ?>'}"><i class="fa fa-trash"></i></a>
                                 </div>
                             </div>
                     <?php 
