@@ -205,16 +205,71 @@ if ($id == "login" || substr($url, -1) == "p") {
   include_once('./process/shutdown.php');
 } elseif ($id == "remove-session" && $session != "") {
   include_once('./include/menu.php');
-  $fc = file("./include/config.php" );
-  $f = fopen("./include/config.php", "w");
+  include_once('./include/router_logger.php');
+  
+  // Prevent deletion of mikpay session
+  if ($session == "mikpay") {
+    logRouterDelete($session, false, 'Attempted to delete main mikpay session');
+    echo "<script>alert('Cannot delete the main mikpay session!'); window.location='./admin.php?id=sessions'</script>";
+    exit;
+  }
+  
+  $configFile = "./include/config.php";
+  
+  // Check if config file exists and is writable
+  if (!file_exists($configFile)) {
+    logRouterDelete($session, false, 'Config file not found');
+    logFilePermissionError($configFile, 'DELETE_ROUTER');
+    echo "<script>alert('Config file not found!'); window.location='./admin.php?id=sessions'</script>";
+    exit;
+  }
+  
+  if (!is_writable($configFile)) {
+    logRouterDelete($session, false, 'Config file not writable');
+    logFilePermissionError($configFile, 'DELETE_ROUTER');
+    echo "<script>alert('Config file is not writable! Please check file permissions.'); window.location='./admin.php?id=sessions'</script>";
+    exit;
+  }
+  
+  // Read config file
+  $fc = file($configFile);
+  if ($fc === false) {
+    logRouterDelete($session, false, 'Failed to read config file');
+    logFilePermissionError($configFile, 'DELETE_ROUTER');
+    echo "<script>alert('Failed to read config file!'); window.location='./admin.php?id=sessions'</script>";
+    exit;
+  }
+  
+  // Open file for writing
+  $f = fopen($configFile, "w");
+  if ($f === false) {
+    logRouterDelete($session, false, 'Failed to open config file for writing');
+    logFilePermissionError($configFile, 'DELETE_ROUTER');
+    echo "<script>alert('Failed to open config file for writing! Please check file permissions.'); window.location='./admin.php?id=sessions'</script>";
+    exit;
+  }
+  
   $q = "'";
   $rem = '$data['.$q.$session.$q.']';
+  $removed = false;
+  
   foreach ($fc as $line) {
-    if (!strstr($line, $rem))
+    if (!strstr($line, $rem)) {
       fputs($f, $line);
+    } else {
+      $removed = true;
+    }
   }
+  
   fclose($f);
-  echo "<script>window.location='./admin.php?id=sessions'</script>";
+  
+  if ($removed) {
+    logRouterDelete($session, true);
+    echo "<script>alert('Router session deleted successfully!'); window.location='./admin.php?id=sessions'</script>";
+  } else {
+    logRouterDelete($session, false, 'Router session not found in config');
+    echo "<script>alert('Router session not found!'); window.location='./admin.php?id=sessions'</script>";
+  }
 } elseif ($id == "subscription") {
   include_once('./include/menu.php');
   include_once('./settings/subscription.php');

@@ -36,17 +36,72 @@ if (!isset($_SESSION["mikpay"])) {
   }
 
   if ($id == "settings" && explode("-",$router)[0] == "new") {
+    include_once('./include/router_logger.php');
+    
+    $configFile = './include/config.php';
+    
+    // Check if config file exists and is writable
+    if (!file_exists($configFile)) {
+      logRouterCreate($router, false, 'Config file not found');
+      logFilePermissionError($configFile, 'CREATE_ROUTER');
+      echo "<script>alert('Config file not found!'); window.location='./admin.php?id=sessions'</script>";
+      exit;
+    }
+    
+    if (!is_writable($configFile)) {
+      logRouterCreate($router, false, 'Config file not writable');
+      logFilePermissionError($configFile, 'CREATE_ROUTER');
+      echo "<script>alert('Config file is not writable! Please check file permissions.'); window.location='./admin.php?id=sessions'</script>";
+      exit;
+    }
+    
+    // Check if router session already exists
+    $content = file_get_contents($configFile);
+    if (strpos($content, "'".$router."'") !== false) {
+      logRouterCreate($router, false, 'Router session already exists');
+      echo "<script>alert('Router session already exists!'); window.location='./admin.php?id=settings&session=" . $router . "'</script>";
+      exit;
+    }
+    
     $data = '$data';
-    $f = fopen('./include/config.php', 'a');
-    fwrite($f, "\n'$'data['".$router."'] = array ('1'=>'".$router."!','".$router."@|@','".$router."#|#','".$router."%','".$router."^','".$router."&Rp','".$router."*10','".$router."(1','".$router.")','".$router."=10','".$router."@!@disable');");
+    $f = fopen($configFile, 'a');
+    
+    if ($f === false) {
+      logRouterCreate($router, false, 'Failed to open config file for writing');
+      logFilePermissionError($configFile, 'CREATE_ROUTER');
+      echo "<script>alert('Failed to open config file for writing! Please check file permissions.'); window.location='./admin.php?id=sessions'</script>";
+      exit;
+    }
+    
+    $writeResult = fwrite($f, "\n'$'data['".$router."'] = array ('1'=>'".$router."!','".$router."@|@','".$router."#|#','".$router."%','".$router."^','".$router."&Rp','".$router."*10','".$router."(1','".$router.")','".$router."=10','".$router."@!@disable');");
     fclose($f);
+    
+    if ($writeResult === false) {
+      logRouterCreate($router, false, 'Failed to write to config file');
+      logFilePermissionError($configFile, 'CREATE_ROUTER');
+      echo "<script>alert('Failed to write to config file! Please check file permissions.'); window.location='./admin.php?id=sessions'</script>";
+      exit;
+    }
+    
+    // Replace the temporary '$'data with actual $data
     $search = "'$'data";
     $replace = (string)"$data";
-    $file = file("./include/config.php");
-    $content = file_get_contents("./include/config.php");
+    $file = file($configFile);
+    $content = file_get_contents($configFile);
     $newcontent = str_replace((string)$search, (string)$replace, "$content");
-    file_put_contents("./include/config.php", "$newcontent");
+    
+    $putResult = file_put_contents($configFile, "$newcontent");
+    
+    if ($putResult === false) {
+      logRouterCreate($router, false, 'Failed to update config file');
+      logFilePermissionError($configFile, 'CREATE_ROUTER');
+      echo "<script>alert('Failed to update config file! Please check file permissions.'); window.location='./admin.php?id=sessions'</script>";
+      exit;
+    }
+    
+    logRouterCreate($router, true);
     echo "<script>window.location='./admin.php?id=settings&session=" . $router . "'</script>";
+    exit;
   }
 
   if (isset($_POST['save'])) {
