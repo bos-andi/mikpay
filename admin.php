@@ -204,13 +204,13 @@ if ($id == "login" || substr($url, -1) == "p") {
 } elseif ($id == "shutdown"  && !empty($session)) {
   include_once('./process/shutdown.php');
 } elseif ($id == "remove-session" && $session != "") {
-  include_once('./include/menu.php');
+  // Don't include menu here to avoid errors - just process deletion
   include_once('./include/router_logger.php');
   
   // Prevent deletion of mikpay session
   if ($session == "mikpay") {
     logRouterDelete($session, false, 'Attempted to delete main mikpay session');
-    echo "<script>alert('Cannot delete the main mikpay session!'); window.location='./admin.php?id=sessions'</script>";
+    header("Location: ./admin.php?id=sessions&msg=cannot_delete_mikpay");
     exit;
   }
   
@@ -271,13 +271,12 @@ if ($id == "login" || substr($url, -1) == "p") {
   
   if ($removed) {
     logRouterDelete($session, true);
-    echo "<script>alert('Router session deleted successfully!'); window.location='./admin.php?id=sessions'</script>";
-    exit;
+    header("Location: ./admin.php?id=sessions&msg=deleted");
   } else {
     logRouterDelete($session, false, 'Router session not found in config');
-    echo "<script>alert('Router session not found in config file!'); window.location='./admin.php?id=sessions'</script>";
-    exit;
+    header("Location: ./admin.php?id=sessions&msg=not_found");
   }
+  exit;
 } elseif ($id == "subscription") {
   include_once('./include/menu.php');
   include_once('./settings/subscription.php');

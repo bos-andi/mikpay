@@ -765,12 +765,99 @@ if (!isset($_SESSION["mikpay"])) {
         height: 50px;
     }
 }
+
+/* Alert Messages */
+.alert {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: #fff;
+    border-left: 4px solid #15803d;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff;
+    border-left: 4px solid #b45309;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #fff;
+    border-left: 4px solid #b91c1c;
+}
+
+.alert i {
+    font-size: 18px;
+}
 </style>
 
 <!-- Background Effect -->
 <div class="settings-page-bg"></div>
 
 <div style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+    <!-- Success/Error Messages -->
+    <?php
+    if (isset($_GET['msg'])) {
+        $msg = $_GET['msg'];
+        $alertClass = 'alert-success';
+        $alertIcon = 'fa-check-circle';
+        $alertMessage = '';
+        
+        switch($msg) {
+            case 'deleted':
+                $alertMessage = 'Router session berhasil dihapus!';
+                break;
+            case 'not_found':
+                $alertClass = 'alert-warning';
+                $alertIcon = 'fa-exclamation-triangle';
+                $alertMessage = 'Router session tidak ditemukan!';
+                break;
+            case 'cannot_delete_mikpay':
+                $alertClass = 'alert-danger';
+                $alertIcon = 'fa-ban';
+                $alertMessage = 'Tidak dapat menghapus session mikpay utama!';
+                break;
+            case 'config_not_found':
+                $alertClass = 'alert-danger';
+                $alertIcon = 'fa-exclamation-circle';
+                $alertMessage = 'File config tidak ditemukan!';
+                break;
+            case 'config_not_writable':
+                $alertClass = 'alert-danger';
+                $alertIcon = 'fa-lock';
+                $alertMessage = 'File config tidak dapat ditulis! Silakan periksa izin file.';
+                break;
+            case 'read_error':
+                $alertClass = 'alert-danger';
+                $alertIcon = 'fa-exclamation-circle';
+                $alertMessage = 'Gagal membaca file config!';
+                break;
+            case 'write_error':
+                $alertClass = 'alert-danger';
+                $alertIcon = 'fa-exclamation-circle';
+                $alertMessage = 'Gagal menulis file config! Silakan periksa izin file.';
+                break;
+        }
+        
+        if (!empty($alertMessage)) {
+            echo '<div class="alert ' . $alertClass . '" style="margin-bottom: 20px; padding: 15px; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                <i class="fa ' . $alertIcon . '"></i>
+                <span>' . htmlspecialchars($alertMessage) . '</span>
+            </div>';
+        }
+    }
+    ?>
     <!-- Page Header -->
     <div class="settings-header">
         <div class="settings-header-icon">

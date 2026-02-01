@@ -125,7 +125,7 @@ if (!isset($_SESSION["mikpay"])) {
     $sidleto = ($_POST['idleto']);
 
     $sesname = (preg_replace('/\s+/', '-', $_POST['sessname']));
-    $slivereport = ($_POST['livereport']);
+    $slivereport = isset($_POST['livereport']) ? $_POST['livereport'] : (isset($livereport) ? $livereport : 'disable');
 
     $search = array('1' => "$session!$iphost", "$session@|@$userhost", "$session#|#$passwdhost", "$session%$hotspotname", "$session^$dnsname", "$session&$currency", "$session*$areload", "$session($iface", "$session)$infolp", "$session=$idleto", "'$session'", "$session@!@$livereport");
 
@@ -445,6 +445,10 @@ if (!isset($_SESSION["mikpay"])) {
                             </div>
                         </div>
                         <?php } ?>
+                        <div class="settings-actions">
+                            <button type="submit" class="btn btn-save-settings" name="save"><i class="fa fa-save"></i> Save</button>
+                            <span class="btn btn-reload" onclick="location.reload();"><i class="fa fa-refresh"></i></span>
+                        </div>
                     </div>
                 </div>
             </div>
