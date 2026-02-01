@@ -25,7 +25,14 @@ Sistem manajemen untuk MikroTik Router yang mencakup Hotspot Management, PPP/PPP
 
 ### 🚀 Deploy ke VPS (Recommended)
 
-Untuk deployment ke VPS, ikuti panduan lengkap di **[DEPLOY_VPS.md](DEPLOY_VPS.md)**
+Untuk deployment ke VPS, ikuti panduan lengkap di **[TUTORIAL_VPS.md](TUTORIAL_VPS.md)**
+
+Panduan mencakup:
+- Setup VPS dari awal
+- Konfigurasi Nginx dan PHP
+- Setup SSL/HTTPS
+- Konfigurasi router
+- Troubleshooting
 
 Quick start dengan script otomatis:
 ```bash
@@ -92,7 +99,7 @@ http://localhost/mikpay/admin.php?id=login
 
 **Default Login:**
 - Username: `mikpay`
-- Password: `mikpay`
+- Password: `1234`
 
 **⚠️ PENTING:** Ganti password default setelah login pertama kali!
 
