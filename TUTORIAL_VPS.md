@@ -195,38 +195,43 @@ Edit file `config.php` dan isi dengan:
 1. **Admin credentials** (default: mikpay/1234)
 2. **Router configuration** (IP, port, username, password)
 
-Format:
+**Format lengkap ada di file `config.php.example` yang sudah di-copy.**
+
+**Cara Encode Password ke Base64:**
+
+Di VPS, jalankan salah satu command berikut:
+```bash
+# Via PHP
+php -r "echo base64_encode('your-password');"
+
+# Via Bash
+echo -n 'your-password' | base64
+
+# Atau gunakan tool online: https://www.base64encode.org/
+```
+
+**Contoh Konfigurasi Router:**
 ```php
-<?php 
-if(substr($_SERVER["REQUEST_URI"], -10) == "config.php"){header("Location:./");}; 
-
-// Admin credentials (default: mikpay/1234)
-$data['mikpay'] = array ('1'=>'mikpay<|<mikpay','mikpay>|>aWNlbA==');
-
-// Router configuration
 $data['ROUTER1'] = array (
-  '1'=>'ROUTER1!192.168.1.1:8728',
-  'ROUTER1@|@admin',
-  'ROUTER1#|#YOUR_PASSWORD_BASE64',
-  'ROUTER1%My Router Name',
-  'ROUTER1^mydomain.com',
-  'ROUTER1&Rp',
-  'ROUTER1*10',
-  'ROUTER1(1',
-  'ROUTER1)',
-  'ROUTER1=10',
-  'ROUTER1@!@enable'
+    '1' => 'ROUTER1!192.168.1.1:8728',        // IP:PORT
+    'ROUTER1@|@admin',                         // Username
+    'ROUTER1#|#YOUR_PASSWORD_BASE64',         // Password (Base64)
+    'ROUTER1%My Router Name',                  // Nama router
+    'ROUTER1^mydomain.com',                    // Domain
+    'ROUTER1&Rp',                              // Currency
+    'ROUTER1*10',                              // Currency position
+    'ROUTER1(1',                               // Expiry mode
+    'ROUTER1)',                                // Reserved
+    'ROUTER1=10',                              // Expiry days
+    'ROUTER1@!@enable'                         // Status
 );
 ```
 
-**Cara encrypt password:**
-```php
-// Di local, buat file test-encrypt.php
-<?php
-include('lib/routeros_api.class.php');
-echo base64_encode('your-password');
-?>
-```
+**Catatan:**
+- SESSION_NAME harus UNIK (tidak boleh sama dengan router lain)
+- SESSION_NAME tidak boleh ada spasi
+- Password HARUS di-encode Base64
+- Pastikan API MikroTik enabled di router (port 8728)
 
 ### 4.3 Set Permissions untuk Config
 

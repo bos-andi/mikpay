@@ -1,40 +1,99 @@
 <?php 
 /*
- * Router Configuration Template
+ * ============================================
+ * MIKPAY Router Configuration File
+ * ============================================
  * 
- * Copy this file to config.php and fill in your router details
- * Format: $data['SESSION_NAME'] = array(
- *   '1' => 'SESSION_NAME!IP:PORT',
- *   'SESSION_NAME@|@USERNAME',
- *   'SESSION_NAME#|#PASSWORD_BASE64',
- *   'SESSION_NAME%ROUTER_NAME',
- *   'SESSION_NAME^DOMAIN',
- *   'SESSION_NAME&CURRENCY',
- *   'SESSION_NAME*CURRENCY_SYMBOL',
- *   'SESSION_NAME(EXPIRY_MODE',
- *   'SESSION_NAME)',
- *   'SESSION_NAME=EXPIRY_DAYS',
- *   'SESSION_NAME@!@STATUS'
+ * INSTRUKSI:
+ * 1. Copy file ini ke config.php
+ * 2. Edit config.php dan isi dengan data router Anda
+ * 3. Password router harus di-encode Base64
+ * 
+ * CARA ENCODE PASSWORD:
+ * - Via PHP: php -r "echo base64_encode('your_password');"
+ * - Via Bash: echo -n 'your_password' | base64
+ * - Via Online: https://www.base64encode.org/
+ * 
+ * FORMAT SETIAP ROUTER:
+ * $data['SESSION_NAME'] = array(
+ *   '1' => 'SESSION_NAME!IP:PORT',           // IP dan Port Router
+ *   'SESSION_NAME@|@USERNAME',               // Username Router
+ *   'SESSION_NAME#|#PASSWORD_BASE64',        // Password (Base64 encoded)
+ *   'SESSION_NAME%ROUTER_NAME',              // Nama Router (tampil di dashboard)
+ *   'SESSION_NAME^DOMAIN',                   // Domain (untuk voucher URL)
+ *   'SESSION_NAME&CURRENCY',                 // Currency (Rp, $, dll)
+ *   'SESSION_NAME*CURRENCY_POSITION',        // Posisi currency (10 = depan, 20 = belakang)
+ *   'SESSION_NAME(EXPIRY_MODE',              // Mode expiry (1 = remove, 2 = notify)
+ *   'SESSION_NAME)',                         // Reserved
+ *   'SESSION_NAME=EXPIRY_DAYS',              // Default expiry days
+ *   'SESSION_NAME@!@STATUS'                  // Status (enable/disable)
  * );
  */
 
-if(substr($_SERVER["REQUEST_URI"], -10) == "config.php"){header("Location:./");}; 
+// Proteksi: Redirect jika diakses langsung
+if(substr($_SERVER["REQUEST_URI"], -10) == "config.php"){
+    header("Location:./");
+    exit;
+}
 
-// Admin credentials (default: mikpay/1234)
-// Password "1234" encrypted: aWNlbA==
-$data['mikpay'] = array ('1'=>'mikpay<|<mikpay','mikpay>|>aWNlbA==');
+// ============================================
+// ADMIN CREDENTIALS
+// ============================================
+// Default login: mikpay / 1234
+// Password "1234" sudah di-encode Base64: aWNlbA==
+// Format: '1' => 'mikpay<|<USERNAME', 'mikpay>|>PASSWORD_BASE64'
+$data['mikpay'] = array (
+    '1' => 'mikpay<|<mikpay',
+    'mikpay>|>aWNlbA=='
+);
 
-// Example router configuration (uncomment and modify)
-// $data['ROUTER1'] = array (
-//   '1'=>'ROUTER1!192.168.1.1:8728',
-//   'ROUTER1@|@admin',
-//   'ROUTER1#|#YOUR_PASSWORD_BASE64',
-//   'ROUTER1%My Router Name',
-//   'ROUTER1^mydomain.com',
-//   'ROUTER1&Rp',
-//   'ROUTER1*10',
-//   'ROUTER1(1',
-//   'ROUTER1)',
-//   'ROUTER1=10',
-//   'ROUTER1@!@enable'
+// ============================================
+// ROUTER CONFIGURATION
+// ============================================
+// Uncomment dan edit sesuai router Anda
+// Anda bisa menambahkan multiple router
+
+// Contoh Router 1
+$data['ROUTER1'] = array (
+    '1' => 'ROUTER1!192.168.1.1:8728',        // IP:PORT (bisa IP public jika accessible)
+    'ROUTER1@|@admin',                         // Username MikroTik
+    'ROUTER1#|#YOUR_PASSWORD_BASE64',         // Password (Base64 encoded)
+    'ROUTER1%My Router Name',                  // Nama router (tampil di dashboard)
+    'ROUTER1^mydomain.com',                    // Domain (untuk voucher login URL)
+    'ROUTER1&Rp',                              // Currency symbol (Rp, $, IDR, dll)
+    'ROUTER1*10',                              // Currency position (10 = depan, 20 = belakang)
+    'ROUTER1(1',                               // Expiry mode (1 = remove, 2 = notify)
+    'ROUTER1)',                                // Reserved
+    'ROUTER1=10',                              // Default expiry days
+    'ROUTER1@!@enable'                         // Status: enable atau disable
+);
+
+// Contoh Router 2 (jika ada multiple router)
+// $data['ROUTER2'] = array (
+//     '1' => 'ROUTER2!192.168.1.2:8728',
+//     'ROUTER2@|@admin',
+//     'ROUTER2#|#YOUR_PASSWORD_BASE64',
+//     'ROUTER2%Router Office',
+//     'ROUTER2^office.mydomain.com',
+//     'ROUTER2&Rp',
+//     'ROUTER2*10',
+//     'ROUTER2(1',
+//     'ROUTER2)',
+//     'ROUTER2=30',
+//     'ROUTER2@!@enable'
 // );
+
+// ============================================
+// CATATAN PENTING:
+// ============================================
+// 1. SESSION_NAME harus UNIK untuk setiap router
+// 2. SESSION_NAME tidak boleh ada spasi, gunakan underscore atau huruf/angka saja
+// 3. Password HARUS di-encode Base64 sebelum disimpan
+// 4. Pastikan API MikroTik enabled di router (port 8728)
+// 5. Pastikan router accessible dari server (bisa via internet atau VPN)
+// 6. Setelah edit, pastikan file permission: chmod 600 config.php
+// 
+// TEST KONEKSI:
+// - Dari server: telnet ROUTER_IP 8728
+// - Jika bisa connect, berarti router accessible
+// ============================================
