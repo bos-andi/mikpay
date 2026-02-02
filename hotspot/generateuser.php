@@ -108,10 +108,31 @@ date_default_timezone_set($_SESSION['timezone']);
 		$commt = $user . "-" . rand(100, 999) . "-" . date("m.d.y") . "-" . $adcomment;
 		$gentemp = $commt . "|~" . $profile . "~" . $getvalid . "~" . $getprice . "!".$getsprice."~" . $timelimit . "~" . $datalimit . "~" . $getlock;
 		$gen = '<?php $genu="'.encrypt($gentemp).'";?>';
+		
+		// Include VPS helper for directory creation
+		include_once('./include/vps_helper.php');
+		
 		$temp = './voucher/temp.php';
-		$handle = fopen($temp, 'w') or die('Cannot open file:  ' . $temp);
+		// Ensure voucher directory exists
+		$voucherDir = dirname($temp);
+		if (!is_dir($voucherDir)) {
+			ensureDirectory($voucherDir, 0755);
+		}
+		
+		$handle = @fopen($temp, 'w');
+		if ($handle === false) {
+			// Try to create directory and retry
+			ensureFileDirectory($temp, 0755);
+			$handle = @fopen($temp, 'w');
+		}
+		
+		if ($handle === false) {
+			die('Cannot create file: ' . $temp . '. Please check directory permissions.');
+		}
+		
 		$data = $gen;
 		fwrite($handle, $data);
+		fclose($handle);
 
 		$a = array("1" => "", "", 1, 2, 2, 3, 3, 4);
 

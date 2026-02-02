@@ -51,6 +51,18 @@ chmod -R 755 /var/www/mikpay
 chmod -R 775 /var/www/mikpay/include
 chmod -R 775 /var/www/mikpay/img
 
+# Create required directories
+echo "📁 Creating required directories..."
+mkdir -p /var/www/mikpay/logs
+mkdir -p /var/www/mikpay/voucher/temp
+mkdir -p /var/www/mikpay/img
+chown -R www-data:www-data /var/www/mikpay/logs
+chown -R www-data:www-data /var/www/mikpay/voucher
+chown -R www-data:www-data /var/www/mikpay/img
+chmod -R 755 /var/www/mikpay/logs
+chmod -R 755 /var/www/mikpay/voucher
+chmod -R 755 /var/www/mikpay/img
+
 # Create config.php if not exists
 if [ ! -f "/var/www/mikpay/include/config.php" ]; then
     echo "⚙️ Creating config.php from template..."

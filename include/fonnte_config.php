@@ -102,6 +102,11 @@ function getFonnteSettings() {
  */
 function saveFonnteSettings($settings) {
     $settings['last_updated'] = date('Y-m-d H:i:s');
+    // Ensure directory exists before writing
+    $fileDir = dirname(FONNTE_CONFIG_FILE);
+    if (!is_dir($fileDir)) {
+        @mkdir($fileDir, 0755, true);
+    }
     file_put_contents(FONNTE_CONFIG_FILE, json_encode($settings, JSON_PRETTY_PRINT));
     return $settings;
 }
@@ -164,6 +169,11 @@ function getRateLimitData() {
  * Save rate limiting data
  */
 function saveRateLimitData($data) {
+    // Ensure directory exists before writing
+    $fileDir = dirname(FONNTE_RATE_FILE);
+    if (!is_dir($fileDir)) {
+        @mkdir($fileDir, 0755, true);
+    }
     file_put_contents(FONNTE_RATE_FILE, json_encode($data, JSON_PRETTY_PRINT));
 }
 
@@ -524,6 +534,11 @@ function logFonnteMessage($phone, $message, $response, $httpCode) {
     array_unshift($logs, $log);
     $logs = array_slice($logs, 0, 500);
     
+    // Ensure directory exists before writing
+    $fileDir = dirname(FONNTE_LOG_FILE);
+    if (!is_dir($fileDir)) {
+        @mkdir($fileDir, 0755, true);
+    }
     file_put_contents(FONNTE_LOG_FILE, json_encode($logs, JSON_PRETTY_PRINT));
     
     return $log;

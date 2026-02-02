@@ -18,7 +18,13 @@ chdir(__DIR__ . '/..');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/fonnte-auto-send-error.log');
+
+// Ensure logs directory exists before setting error_log
+$logsDir = __DIR__ . '/../logs';
+if (!is_dir($logsDir)) {
+    @mkdir($logsDir, 0755, true);
+}
+ini_set('error_log', $logsDir . '/fonnte-auto-send-error.log');
 
 // Log function
 function logMessage($message) {

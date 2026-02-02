@@ -32,6 +32,11 @@ function getBusinessSettings() {
  * Save business settings
  */
 function saveBusinessSettings($settings) {
+    // Ensure directory exists before writing
+    $configDir = dirname(BUSINESS_CONFIG_FILE);
+    if (!is_dir($configDir)) {
+        @mkdir($configDir, 0755, true);
+    }
     file_put_contents(BUSINESS_CONFIG_FILE, json_encode($settings, JSON_PRETTY_PRINT));
 }
 

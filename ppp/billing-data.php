@@ -33,6 +33,11 @@ function getCustomerBillingSettings() {
  * Save customer billing settings
  */
 function saveCustomerBillingSettings($settings) {
+    // Ensure directory exists before writing
+    $fileDir = dirname(BILLING_CUSTOMERS_FILE);
+    if (!is_dir($fileDir)) {
+        @mkdir($fileDir, 0755, true);
+    }
     file_put_contents(BILLING_CUSTOMERS_FILE, json_encode($settings, JSON_PRETTY_PRINT));
 }
 
@@ -291,6 +296,11 @@ function getBillingPayments() {
  * Save billing payments
  */
 function saveBillingPayments($payments) {
+    // Ensure directory exists before writing
+    $fileDir = dirname(BILLING_DATA_FILE);
+    if (!is_dir($fileDir)) {
+        @mkdir($fileDir, 0755, true);
+    }
     file_put_contents(BILLING_DATA_FILE, json_encode($payments, JSON_PRETTY_PRINT));
 }
 

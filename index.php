@@ -25,7 +25,13 @@ initSecureSession();
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/logs/php_errors.log');
+
+// Ensure logs directory exists before setting error_log
+$logsDir = __DIR__ . '/logs';
+if (!is_dir($logsDir)) {
+    @mkdir($logsDir, 0755, true);
+}
+ini_set('error_log', $logsDir . '/php_errors.log');
 // check url
 
 ob_start("ob_gzhandler");

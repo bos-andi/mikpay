@@ -113,6 +113,11 @@ function getSubscription() {
  * Save subscription data
  */
 function saveSubscription($data) {
+    // Ensure directory exists before writing
+    $fileDir = dirname(SUBSCRIPTION_FILE);
+    if (!is_dir($fileDir)) {
+        @mkdir($fileDir, 0755, true);
+    }
     file_put_contents(SUBSCRIPTION_FILE, json_encode($data, JSON_PRETTY_PRINT));
 }
 
@@ -343,6 +348,11 @@ function getAllUsers() {
  * Save all users
  */
 function saveAllUsers($users) {
+    // Ensure directory exists before writing
+    $fileDir = dirname(USERS_FILE);
+    if (!is_dir($fileDir)) {
+        @mkdir($fileDir, 0755, true);
+    }
     file_put_contents(USERS_FILE, json_encode($users, JSON_PRETTY_PRINT));
 }
 

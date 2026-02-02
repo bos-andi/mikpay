@@ -385,6 +385,55 @@ sudo chmod 600 /var/www/mikpay/include/config.php
 2. Check MikroTik script dengan comment "mikpay"
 3. Pastikan format script sesuai
 
+### Masalah: Error "Cannot create file" atau "Permission denied" saat Generate Voucher
+
+**Solusi:**
+```bash
+# Pastikan directory voucher/temp ada dan writable
+sudo mkdir -p /var/www/mikpay/voucher/temp
+sudo chown -R www-data:www-data /var/www/mikpay/voucher
+sudo chmod -R 755 /var/www/mikpay/voucher
+```
+
+### Masalah: Error saat Save Settings atau Create Router
+
+**Solusi:**
+```bash
+# Pastikan include directory writable
+sudo chmod 755 /var/www/mikpay/include
+sudo chmod 644 /var/www/mikpay/include/*.php
+sudo chmod 600 /var/www/mikpay/include/config.php
+
+# Pastikan bisa write JSON files
+sudo touch /var/www/mikpay/include/business_settings.json
+sudo touch /var/www/mikpay/include/subscription.json
+sudo touch /var/www/mikpay/include/users.json
+sudo chown www-data:www-data /var/www/mikpay/include/*.json
+sudo chmod 644 /var/www/mikpay/include/*.json
+```
+
+### Masalah: Logs Directory Tidak Ada
+
+**Solusi:**
+```bash
+# Buat logs directory
+sudo mkdir -p /var/www/mikpay/logs
+sudo chown www-data:www-data /var/www/mikpay/logs
+sudo chmod 755 /var/www/mikpay/logs
+```
+
+### Masalah: Error 500 Internal Server Error
+
+**Solusi:**
+1. Check PHP error log: `sudo tail -f /var/www/mikpay/logs/php_errors.log`
+2. Check Nginx error log: `sudo tail -f /var/log/nginx/mikpay-error.log`
+3. Pastikan semua directory yang diperlukan sudah dibuat:
+   ```bash
+   sudo mkdir -p /var/www/mikpay/{logs,voucher/temp,img}
+   sudo chown -R www-data:www-data /var/www/mikpay
+   sudo chmod -R 755 /var/www/mikpay
+   ```
+
 ## 📝 Checklist Deploy
 
 - [ ] VPS sudah di-setup dengan PHP, Nginx, Git
@@ -417,3 +466,8 @@ Jika ada masalah, cek:
 ---
 
 **Selamat! Aplikasi MIKPAY sudah berjalan di VPS Anda! 🎉**
+
+ chown -R www-data:www-data /var/www/itsnet.mikpay.link
+ chmod -R 755 /var/www/itsnet.mikpay.link
+ chmod 600 /var/www/itsnet.mikpay.link/include/config.php
+ chmod 600 /var/www/itsnet.mikpay.link/include/*.json
