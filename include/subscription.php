@@ -101,12 +101,38 @@ function getSubscription() {
             'end_date' => date('Y-m-d', strtotime('+7 days')),
             'payment_history' => array()
         );
-        saveSubscription($defaultSub);
+        $result = saveSubscription($defaultSub);
+        if ($result === false) {
+            error_log("getSubscription: Failed to save default subscription");
+        }
         return $defaultSub;
     }
     
     $data = file_get_contents(SUBSCRIPTION_FILE);
-    return json_decode($data, true);
+    if ($data === false) {
+        error_log("getSubscription: Failed to read subscription file: " . SUBSCRIPTION_FILE);
+        return array(
+            'status' => 'trial',
+            'package' => 'trial',
+            'start_date' => date('Y-m-d'),
+            'end_date' => date('Y-m-d', strtotime('+7 days')),
+            'payment_history' => array()
+        );
+    }
+    
+    $decoded = json_decode($data, true);
+    if ($decoded === null) {
+        error_log("getSubscription: Failed to decode JSON from subscription file");
+        return array(
+            'status' => 'trial',
+            'package' => 'trial',
+            'start_date' => date('Y-m-d'),
+            'end_date' => date('Y-m-d', strtotime('+7 days')),
+            'payment_history' => array()
+        );
+    }
+    
+    return $decoded;
 }
 
 /**
@@ -116,9 +142,26 @@ function saveSubscription($data) {
     // Ensure directory exists before writing
     $fileDir = dirname(SUBSCRIPTION_FILE);
     if (!is_dir($fileDir)) {
-        @mkdir($fileDir, 0755, true);
+        if (!@mkdir($fileDir, 0755, true)) {
+            error_log("saveSubscription: Failed to create directory: " . $fileDir);
+            return false;
+        }
     }
-    file_put_contents(SUBSCRIPTION_FILE, json_encode($data, JSON_PRETTY_PRINT));
+    
+    $jsonData = json_encode($data, JSON_PRETTY_PRINT);
+    if ($jsonData === false) {
+        error_log("saveSubscription: Failed to encode subscription data to JSON");
+        return false;
+    }
+    
+    $result = file_put_contents(SUBSCRIPTION_FILE, $jsonData);
+    
+    if ($result === false) {
+        error_log("saveSubscription: Failed to write to file: " . SUBSCRIPTION_FILE);
+        return false;
+    }
+    
+    return true;
 }
 
 /**
@@ -153,7 +196,13 @@ function getRemainingDays() {
 function activateSubscription($package, $transactionId = '') {
     global $subscriptionPackages;
     
+    if (empty($package)) {
+        error_log("activateSubscription: Package parameter is empty");
+        return false;
+    }
+    
     if (!isset($subscriptionPackages[$package])) {
+        error_log("activateSubscription: Package not found: " . $package);
         return false;
     }
     
@@ -170,10 +219,21 @@ function activateSubscription($package, $transactionId = '') {
     
     $endDate = date('Y-m-d', strtotime($baseDate . ' + ' . $pkg['duration'] . ' days'));
     
+    if ($endDate === false) {
+        error_log("activateSubscription: Failed to calculate end date");
+        return false;
+    }
+    
     $sub['status'] = 'active';
     $sub['package'] = $package;
     $sub['start_date'] = $startDate;
     $sub['end_date'] = $endDate;
+    
+    // Initialize payment_history if not exists
+    if (!isset($sub['payment_history'])) {
+        $sub['payment_history'] = array();
+    }
+    
     $sub['payment_history'][] = array(
         'date' => date('Y-m-d H:i:s'),
         'package' => $package,
@@ -181,7 +241,14 @@ function activateSubscription($package, $transactionId = '') {
         'transaction_id' => $transactionId
     );
     
-    saveSubscription($sub);
+    $result = saveSubscription($sub);
+    
+    if ($result === false) {
+        error_log("activateSubscription: Failed to save subscription data for package: " . $package);
+        return false;
+    }
+    
+    error_log("activateSubscription: Successfully activated subscription for package: " . $package . " (end_date: " . $endDate . ")");
     return true;
 }
 
@@ -604,7 +671,13 @@ function extendSubscription($days) {
         $baseDate = date('Y-m-d');
     }
     
-    $sub['end_date'] = date('Y-m-d', strtotime($baseDate . ' + ' . intval($days) . ' days'));
+    $endDate = date('Y-m-d', strtotime($baseDate . ' + ' . intval($days) . ' days'));
+    if ($endDate === false) {
+        error_log("extendSubscription: Failed to calculate end date");
+        return false;
+    }
+    
+    $sub['end_date'] = $endDate;
     $sub['status'] = 'active';
     $sub['updated_at'] = date('Y-m-d H:i:s');
     
@@ -638,29 +711,41 @@ function extendUserSubscription($userId, $days) {
         $baseDate = date('Y-m-d');
     }
     
-    $sub['end_date'] = date('Y-m-d', strtotime($baseDate . ' + ' . $days . ' days'));
+    $endDate = date('Y-m-d', strtotime($baseDate . ' + ' . $days . ' days'));
+    if ($endDate === false) {
+        error_log("extendUserSubscription: Failed to calculate end date");
+        return false;
+    }
+    
+    $sub['end_date'] = $endDate;
     $sub['status'] = 'active';
     $sub['updated_at'] = date('Y-m-d H:i:s');
     
-    saveSubscription($sub);
+    $result = saveSubscription($sub);
+    
+    if ($result === false) {
+        error_log("extendUserSubscription: Failed to save subscription");
+        return false;
+    }
+    
     return true;
 }
 
 /**
- * Set user package manually
+ * Set global package manually (for main subscription)
  */
-function setUserPackage($package, $days = 30) {
+function setGlobalPackage($package, $days = 30) {
     global $subscriptionPackages;
     
     // Validate package exists
     if (!isset($subscriptionPackages[$package])) {
-        error_log("setUserPackage: Invalid package: " . $package);
+        error_log("setGlobalPackage: Invalid package: " . $package);
         return false;
     }
     
     // Validate days
     if (!is_numeric($days) || $days <= 0) {
-        error_log("setUserPackage: Invalid days parameter: " . $days);
+        error_log("setGlobalPackage: Invalid days parameter: " . $days);
         return false;
     }
     
@@ -668,16 +753,30 @@ function setUserPackage($package, $days = 30) {
     $sub['status'] = 'active';
     $sub['package'] = $package;
     $sub['start_date'] = date('Y-m-d');
-    $sub['end_date'] = date('Y-m-d', strtotime('+' . intval($days) . ' days'));
+    
+    $endDate = date('Y-m-d', strtotime('+' . intval($days) . ' days'));
+    if ($endDate === false) {
+        error_log("setGlobalPackage: Failed to calculate end date");
+        return false;
+    }
+    
+    $sub['end_date'] = $endDate;
     $sub['updated_at'] = date('Y-m-d H:i:s');
     
     $result = saveSubscription($sub);
     
     if ($result === false) {
-        error_log("setUserPackage: Failed to save subscription");
+        error_log("setGlobalPackage: Failed to save subscription");
         return false;
     }
     
-    error_log("setUserPackage: Successfully set package to " . $package . " for " . $days . " days. End date: " . $sub['end_date']);
+    error_log("setGlobalPackage: Successfully set package to " . $package . " for " . $days . " days. End date: " . $sub['end_date']);
     return true;
+}
+
+/**
+ * Set user package manually (alias for setGlobalPackage for backward compatibility)
+ */
+function setUserPackage($package, $days = 30) {
+    return setGlobalPackage($package, $days);
 }
