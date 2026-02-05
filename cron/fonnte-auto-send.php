@@ -55,11 +55,19 @@ $sentCount = 0;
 $skippedCount = 0;
 $errorCount = 0;
 
-// Check schedule (jika schedule enabled)
-$scheduleEnabled = isset($settings['schedule_enabled']) ? $settings['schedule_enabled'] : true;
+// Log settings untuk debugging
+logMessage("Settings: auto_send_h3=" . (isset($settings['auto_send_h3']) && $settings['auto_send_h3'] ? 'enabled' : 'disabled'));
+logMessage("Settings: auto_send_h0=" . (isset($settings['auto_send_h0']) && $settings['auto_send_h0'] ? 'enabled' : 'disabled'));
+logMessage("Settings: auto_send_overdue=" . (isset($settings['auto_send_overdue']) && $settings['auto_send_overdue'] ? 'enabled' : 'disabled'));
+
+// Check schedule (default: disabled, jadi selalu kirim jika ada customer)
+$scheduleEnabled = isset($settings['schedule_enabled']) && $settings['schedule_enabled'] ? true : false;
 $currentDay = (int)date('N'); // 1=Monday, 7=Sunday
 $currentTime = date('H:i');
 $scheduleDays = isset($settings['schedule_days']) ? $settings['schedule_days'] : array(1,2,3,4,5,6,7);
+
+logMessage("Schedule enabled: " . ($scheduleEnabled ? 'yes' : 'no'));
+logMessage("Current day: $currentDay, Current time: $currentTime");
 
 // Check if today is in schedule days
 $canRunToday = in_array($currentDay, $scheduleDays);
@@ -71,7 +79,8 @@ if ($scheduleEnabled && !$canRunToday) {
 }
 
 // Function to check if current time matches schedule
-function shouldSendAtTime($scheduleTime, $currentTime, $toleranceMinutes = 5) {
+// Returns true if schedule is disabled, empty, or current time is >= schedule time (within tolerance)
+function shouldSendAtTime($scheduleTime, $currentTime, $toleranceMinutes = 60) {
     if (empty($scheduleTime)) return true;
     
     list($scheduleHour, $scheduleMin) = explode(':', $scheduleTime);
@@ -80,23 +89,41 @@ function shouldSendAtTime($scheduleTime, $currentTime, $toleranceMinutes = 5) {
     $scheduleTotal = (int)$scheduleHour * 60 + (int)$scheduleMin;
     $currentTotal = (int)$currentHour * 60 + (int)$currentMin;
     
-    // Check if within tolerance (default 5 menit sebelum/sesudah)
-    return abs($currentTotal - $scheduleTotal) <= $toleranceMinutes;
+    // Kirim jika waktu sekarang >= waktu schedule DAN masih dalam tolerance window
+    // Contoh: schedule 09:00, tolerance 60 menit
+    // - Kirim jika sekarang 09:00-10:00
+    // - Tidak kirim jika sekarang 08:00 (belum waktunya)
+    // - Tidak kirim jika sekarang 10:01 (sudah lewat tolerance)
+    $diff = $currentTotal - $scheduleTotal;
+    
+    // Jika waktu sekarang >= schedule time dan masih dalam tolerance
+    if ($diff >= 0 && $diff <= $toleranceMinutes) {
+        return true;
+    }
+    
+    // Jika waktu sekarang masih sebelum schedule time, tidak kirim
+    return false;
 }
 
 // ============================================
 // 1. AUTO SEND H-3 (3 hari sebelum jatuh tempo)
 // ============================================
 $scheduleH3Time = isset($settings['schedule_h3_time']) ? $settings['schedule_h3_time'] : '09:00';
-$shouldSendH3 = !$scheduleEnabled || shouldSendAtTime($scheduleH3Time, $currentTime);
+// Jika schedule disabled, selalu kirim. Jika enabled, cek waktu
+$shouldSendH3 = !$scheduleEnabled || shouldSendAtTime($scheduleH3Time, $currentTime, 60);
 
-if (isset($settings['auto_send_h3']) && $settings['auto_send_h3'] && $shouldSendH3) {
+if (isset($settings['auto_send_h3']) && $settings['auto_send_h3']) {
     logMessage("Mengecek reminder H-3...");
+    logMessage("Schedule H-3 time: $scheduleH3Time, Should send: " . ($shouldSendH3 ? 'yes' : 'no'));
     
-    $customers = getCustomersNeedingReminder();
-    foreach ($customers as $customer) {
-        // Hanya kirim jika H-3 (3 hari lagi)
-        if ($customer['days_to_due'] === 3 && $customer['status'] === 'due_soon') {
+    if ($shouldSendH3) {
+        $customers = getCustomersNeedingReminder();
+        logMessage("Found " . count($customers) . " customers needing reminder");
+        
+        foreach ($customers as $customer) {
+            // Hanya kirim jika H-3 (3 hari lagi)
+            if ($customer['days_to_due'] === 3 && $customer['status'] === 'due_soon') {
+                logMessage("Processing H-3 for: {$customer['customer_name']} (days_to_due: {$customer['days_to_due']}, status: {$customer['status']})");
             if (empty($customer['phone'])) {
                 logMessage("SKIP: {$customer['customer_name']} - No phone number");
                 $skippedCount++;
@@ -145,22 +172,37 @@ if (isset($settings['auto_send_h3']) && $settings['auto_send_h3'] && $shouldSend
                 sleep($delay);
             }
         }
+        } else {
+            logMessage("H-3: No customers found with H-3 status.");
+        }
+    } else {
+        logMessage("H-3: Schedule enabled but current time ($currentTime) not within schedule window ($scheduleH3Time).");
     }
+} else {
+    logMessage("H-3: Auto-send disabled. auto_send_h3=" . (isset($settings['auto_send_h3']) ? ($settings['auto_send_h3'] ? 'enabled' : 'disabled') : 'not set'));
 }
 
 // ============================================
 // 2. AUTO SEND H-0 (Hari ini jatuh tempo)
 // ============================================
 $scheduleH0Time = isset($settings['schedule_h0_time']) ? $settings['schedule_h0_time'] : '08:00';
-$shouldSendH0 = !$scheduleEnabled || shouldSendAtTime($scheduleH0Time, $currentTime);
+// Jika schedule disabled, selalu kirim. Jika enabled, cek waktu
+$shouldSendH0 = !$scheduleEnabled || shouldSendAtTime($scheduleH0Time, $currentTime, 60);
 
-if (isset($settings['auto_send_h0']) && $settings['auto_send_h0'] && $shouldSendH0) {
+if (isset($settings['auto_send_h0']) && $settings['auto_send_h0']) {
+    if (!$shouldSendH0) {
+        logMessage("H-0: Schedule enabled but current time ($currentTime) not within schedule window ($scheduleH0Time). Skipping.");
+    } else {
     logMessage("Mengecek reminder H-0 (Due Today)...");
+    logMessage("Schedule H-0 time: $scheduleH0Time, Should send: " . ($shouldSendH0 ? 'yes' : 'no'));
     
     $customers = getCustomersNeedingReminder();
+    logMessage("Found " . count($customers) . " customers needing reminder");
+    
     foreach ($customers as $customer) {
         // Hanya kirim jika due today
         if ($customer['status'] === 'due_today') {
+            logMessage("Processing H-0 for: {$customer['customer_name']} (status: {$customer['status']})");
             if (empty($customer['phone'])) {
                 logMessage("SKIP: {$customer['customer_name']} - No phone number");
                 $skippedCount++;
@@ -210,19 +252,32 @@ if (isset($settings['auto_send_h0']) && $settings['auto_send_h0'] && $shouldSend
             }
         }
     }
+    } else {
+        logMessage("H-0: No customers found or processed.");
+    }
+} else {
+    logMessage("H-0: Auto-send disabled or schedule not matched. auto_send_h0=" . (isset($settings['auto_send_h0']) && $settings['auto_send_h0'] ? 'enabled' : 'disabled'));
 }
 
 // ============================================
 // 3. AUTO SEND OVERDUE (Sudah lewat jatuh tempo)
 // ============================================
 $scheduleOverdueTime = isset($settings['schedule_overdue_time']) ? $settings['schedule_overdue_time'] : '10:00';
-$shouldSendOverdue = !$scheduleEnabled || shouldSendAtTime($scheduleOverdueTime, $currentTime);
+// Jika schedule disabled, selalu kirim. Jika enabled, cek waktu
+$shouldSendOverdue = !$scheduleEnabled || shouldSendAtTime($scheduleOverdueTime, $currentTime, 60);
 
-if (isset($settings['auto_send_overdue']) && $settings['auto_send_overdue'] && $shouldSendOverdue) {
+if (isset($settings['auto_send_overdue']) && $settings['auto_send_overdue']) {
+    if (!$shouldSendOverdue) {
+        logMessage("Overdue: Schedule enabled but current time ($currentTime) not within schedule window ($scheduleOverdueTime). Skipping.");
+    } else {
     logMessage("Mengecek reminder Overdue...");
+    logMessage("Schedule Overdue time: $scheduleOverdueTime, Should send: " . ($shouldSendOverdue ? 'yes' : 'no'));
     
     $customers = getOverdueCustomers();
+    logMessage("Found " . count($customers) . " overdue customers");
+    
     foreach ($customers as $customer) {
+        logMessage("Processing Overdue for: {$customer['customer_name']} (days_overdue: {$customer['days_overdue']})");
         if (empty($customer['phone'])) {
             logMessage("SKIP: {$customer['customer_name']} - No phone number");
             $skippedCount++;
@@ -271,6 +326,14 @@ if (isset($settings['auto_send_overdue']) && $settings['auto_send_overdue'] && $
             sleep($delay);
         }
     }
+    } else {
+        logMessage("Overdue: No overdue customers found.");
+    }
+} else {
+    logMessage("Overdue: Schedule enabled but current time ($currentTime) not within schedule window ($scheduleOverdueTime).");
+}
+} else {
+    logMessage("Overdue: Auto-send disabled. auto_send_overdue=" . (isset($settings['auto_send_overdue']) ? ($settings['auto_send_overdue'] ? 'enabled' : 'disabled') : 'not set'));
 }
 
 // Summary

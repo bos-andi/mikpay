@@ -43,13 +43,34 @@ function getPendingPayments() {
  * Save pending payments
  */
 function savePendingPayments($payments) {
-    file_put_contents(PENDING_PAYMENTS_FILE, json_encode($payments, JSON_PRETTY_PRINT));
+    // Ensure directory exists before writing
+    $fileDir = dirname(PENDING_PAYMENTS_FILE);
+    if (!is_dir($fileDir)) {
+        if (!@mkdir($fileDir, 0755, true)) {
+            error_log("savePendingPayments: Failed to create directory: " . $fileDir);
+            return false;
+        }
+    }
+    
+    $result = file_put_contents(PENDING_PAYMENTS_FILE, json_encode($payments, JSON_PRETTY_PRINT));
+    
+    if ($result === false) {
+        error_log("savePendingPayments: Failed to write to file: " . PENDING_PAYMENTS_FILE);
+        return false;
+    }
+    
+    return true;
 }
 
 /**
  * Add pending payment request
  */
 function addPendingPayment($userId, $package, $amount, $proofFile = '') {
+    if (empty($userId) || empty($package) || empty($amount)) {
+        error_log("addPendingPayment: Missing required parameters");
+        return false;
+    }
+    
     $payments = getPendingPayments();
     
     $payment = array(
@@ -65,7 +86,12 @@ function addPendingPayment($userId, $package, $amount, $proofFile = '') {
     );
     
     $payments[] = $payment;
-    savePendingPayments($payments);
+    $result = savePendingPayments($payments);
+    
+    if ($result === false) {
+        error_log("addPendingPayment: Failed to save payment data");
+        return false;
+    }
     
     return $payment['id'];
 }
@@ -77,19 +103,45 @@ function approvePayment($paymentId) {
     include_once(__DIR__ . '/subscription.php');
     
     $payments = getPendingPayments();
+    $found = false;
     
     foreach ($payments as &$payment) {
         if ($payment['id'] === $paymentId && $payment['status'] === 'pending') {
+            $found = true;
+            
+            // Validate package exists
+            if (!isset($payment['package']) || empty($payment['package'])) {
+                error_log("Superadmin approvePayment: Package not found in payment data");
+                return false;
+            }
+            
+            // Activate subscription for user
+            $activationResult = activateSubscription($payment['package'], $paymentId);
+            
+            if ($activationResult === false) {
+                error_log("Superadmin approvePayment: Failed to activate subscription for package: " . $payment['package']);
+                return false;
+            }
+            
+            // Update payment status only if activation successful
             $payment['status'] = 'approved';
             $payment['approved_at'] = date('Y-m-d H:i:s');
             $payment['approved_by'] = SUPERADMIN_EMAIL;
             
-            // Activate subscription for user
-            activateSubscription($payment['package'], $paymentId);
+            $saveResult = savePendingPayments($payments);
             
-            savePendingPayments($payments);
+            if ($saveResult === false) {
+                error_log("Superadmin approvePayment: Failed to save payment data");
+                return false;
+            }
+            
+            error_log("Superadmin approvePayment: Successfully approved payment " . $paymentId . " for package " . $payment['package']);
             return true;
         }
+    }
+    
+    if (!$found) {
+        error_log("Superadmin approvePayment: Payment not found or already processed: " . $paymentId);
     }
     
     return false;
@@ -100,17 +152,31 @@ function approvePayment($paymentId) {
  */
 function rejectPayment($paymentId, $reason = '') {
     $payments = getPendingPayments();
+    $found = false;
     
     foreach ($payments as &$payment) {
         if ($payment['id'] === $paymentId && $payment['status'] === 'pending') {
+            $found = true;
+            
             $payment['status'] = 'rejected';
             $payment['rejected_at'] = date('Y-m-d H:i:s');
             $payment['rejected_by'] = SUPERADMIN_EMAIL;
             $payment['reject_reason'] = $reason;
             
-            savePendingPayments($payments);
+            $saveResult = savePendingPayments($payments);
+            
+            if ($saveResult === false) {
+                error_log("Superadmin rejectPayment: Failed to save payment data");
+                return false;
+            }
+            
+            error_log("Superadmin rejectPayment: Successfully rejected payment " . $paymentId);
             return true;
         }
+    }
+    
+    if (!$found) {
+        error_log("Superadmin rejectPayment: Payment not found or already processed: " . $paymentId);
     }
     
     return false;

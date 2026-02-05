@@ -80,40 +80,97 @@ if (isSuperAdmin()) {
     
     // Approve payment
     if (isset($_POST['approve'])) {
-        $paymentId = sanitizeInput($_POST['payment_id'], 'string');
-        approvePayment($paymentId);
-        header('Location: index.php?tab=payments&msg=approved');
-        exit;
+        $paymentId = sanitizeInput($_POST['payment_id'] ?? '', 'string');
+        
+        if (empty($paymentId)) {
+            $loginError = 'Payment ID tidak valid!';
+        } else {
+            $result = approvePayment($paymentId);
+            if ($result) {
+                header('Location: index.php?tab=payments&msg=approved');
+                exit;
+            } else {
+                $loginError = 'Gagal approve payment. Payment mungkin sudah diproses atau tidak ditemukan.';
+            }
+        }
     }
     // Reject payment
     if (isset($_POST['reject'])) {
-        $paymentId = sanitizeInput($_POST['payment_id'], 'string');
+        $paymentId = sanitizeInput($_POST['payment_id'] ?? '', 'string');
         $reason = sanitizeInput($_POST['reason'] ?? '', 'string');
-        rejectPayment($paymentId, $reason);
-        header('Location: index.php?tab=payments&msg=rejected');
-        exit;
+        
+        if (empty($paymentId)) {
+            $loginError = 'Payment ID tidak valid!';
+        } else {
+            $result = rejectPayment($paymentId, $reason);
+            if ($result) {
+                header('Location: index.php?tab=payments&msg=rejected');
+                exit;
+            } else {
+                $loginError = 'Gagal reject payment. Payment mungkin sudah diproses atau tidak ditemukan.';
+            }
+        }
     }
     // Activate user
     if (isset($_POST['activate_user'])) {
-        $userId = sanitizeInput($_POST['user_id'], 'string');
-        activateUser($userId);
-        header('Location: index.php?tab=users&msg=activated');
-        exit;
+        $userId = sanitizeInput($_POST['user_id'] ?? '', 'string');
+        
+        if (empty($userId)) {
+            $loginError = 'User ID tidak valid!';
+        } else {
+            if (function_exists('activateUser')) {
+                $result = activateUser($userId);
+                if ($result) {
+                    header('Location: index.php?tab=users&msg=activated');
+                    exit;
+                } else {
+                    $loginError = 'Gagal mengaktifkan user. Silakan coba lagi.';
+                }
+            } else {
+                $loginError = 'Fungsi activateUser tidak ditemukan!';
+            }
+        }
     }
     // Deactivate user
     if (isset($_POST['deactivate_user'])) {
-        $userId = sanitizeInput($_POST['user_id'], 'string');
+        $userId = sanitizeInput($_POST['user_id'] ?? '', 'string');
         $reason = sanitizeInput($_POST['reason'] ?? '', 'string');
-        deactivateUser($userId, $reason);
-        header('Location: index.php?tab=users&msg=deactivated');
-        exit;
+        
+        if (empty($userId)) {
+            $loginError = 'User ID tidak valid!';
+        } else {
+            if (function_exists('deactivateUser')) {
+                $result = deactivateUser($userId, $reason);
+                if ($result) {
+                    header('Location: index.php?tab=users&msg=deactivated');
+                    exit;
+                } else {
+                    $loginError = 'Gagal menonaktifkan user. Silakan coba lagi.';
+                }
+            } else {
+                $loginError = 'Fungsi deactivateUser tidak ditemukan!';
+            }
+        }
     }
     // Delete user
     if (isset($_POST['delete_user'])) {
-        $userId = sanitizeInput($_POST['user_id'], 'string');
-        deleteUser($userId);
-        header('Location: index.php?tab=users&msg=deleted');
-        exit;
+        $userId = sanitizeInput($_POST['user_id'] ?? '', 'string');
+        
+        if (empty($userId)) {
+            $loginError = 'User ID tidak valid!';
+        } else {
+            if (function_exists('deleteUser')) {
+                $result = deleteUser($userId);
+                if ($result) {
+                    header('Location: index.php?tab=users&msg=deleted');
+                    exit;
+                } else {
+                    $loginError = 'Gagal menghapus user. Silakan coba lagi.';
+                }
+            } else {
+                $loginError = 'Fungsi deleteUser tidak ditemukan!';
+            }
+        }
     }
     // Add new user
     if (isset($_POST['add_user'])) {
@@ -153,28 +210,64 @@ if (isSuperAdmin()) {
                         'subscription_status' => 'trial',
                         'notes' => sanitizeInput($_POST['new_user_notes'] ?? '', 'string')
                     );
-                    saveUser($userId, $userData);
-                    header('Location: index.php?tab=users&msg=added');
-                    exit;
+                    $result = saveUser($userId, $userData);
+                    if ($result) {
+                        header('Location: index.php?tab=users&msg=added');
+                        exit;
+                    } else {
+                        $loginError = 'Gagal menyimpan user. Silakan coba lagi.';
+                    }
                 }
             }
         }
     }
     // Update subscription manually
     if (isset($_POST['update_subscription'])) {
-        if (function_exists('setUserPackage')) {
-            setUserPackage($_POST['sub_package'], intval($_POST['sub_days']));
+        $package = sanitizeInput($_POST['sub_package'] ?? '', 'string');
+        $days = intval($_POST['sub_days'] ?? 30);
+        
+        if (empty($package)) {
+            $loginError = 'Paket harus dipilih!';
+        } elseif ($days <= 0) {
+            $loginError = 'Durasi harus lebih dari 0 hari!';
+        } else {
+            if (function_exists('setGlobalPackage')) {
+                $result = setGlobalPackage($package, $days);
+                if ($result) {
+                    header('Location: index.php?tab=subscription&msg=updated');
+                    exit;
+                } else {
+                    $loginError = 'Gagal mengupdate subscription. Silakan coba lagi.';
+                }
+            } else {
+                $loginError = 'Fungsi setGlobalPackage tidak ditemukan!';
+            }
         }
-        header('Location: index.php?tab=subscription&msg=updated');
-        exit;
     }
     // Extend subscription
     if (isset($_POST['extend_subscription'])) {
-        if (function_exists('extendUserSubscription')) {
-            extendUserSubscription('main', intval($_POST['extend_days']));
+        $days = intval($_POST['extend_days'] ?? 0);
+        
+        if ($days <= 0) {
+            $loginError = 'Jumlah hari harus lebih dari 0!';
+        } else {
+            // Use extendSubscription instead of extendUserSubscription
+            if (function_exists('extendSubscription')) {
+                $result = extendSubscription($days);
+            } elseif (function_exists('extendUserSubscription')) {
+                // Fallback for backward compatibility
+                $result = extendUserSubscription('main', $days);
+            } else {
+                $result = false;
+            }
+            
+            if ($result) {
+                header('Location: index.php?tab=subscription&msg=extended');
+                exit;
+            } else {
+                $loginError = 'Gagal memperpanjang subscription. Silakan coba lagi.';
+            }
         }
-        header('Location: index.php?tab=subscription&msg=extended');
-        exit;
     }
 }
 

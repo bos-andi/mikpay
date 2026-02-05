@@ -351,9 +351,20 @@ function saveAllUsers($users) {
     // Ensure directory exists before writing
     $fileDir = dirname(USERS_FILE);
     if (!is_dir($fileDir)) {
-        @mkdir($fileDir, 0755, true);
+        if (!@mkdir($fileDir, 0755, true)) {
+            error_log("saveAllUsers: Failed to create directory: " . $fileDir);
+            return false;
+        }
     }
-    file_put_contents(USERS_FILE, json_encode($users, JSON_PRETTY_PRINT));
+    
+    $result = file_put_contents(USERS_FILE, json_encode($users, JSON_PRETTY_PRINT));
+    
+    if ($result === false) {
+        error_log("saveAllUsers: Failed to write to file: " . USERS_FILE);
+        return false;
+    }
+    
+    return true;
 }
 
 /**
@@ -380,7 +391,13 @@ function saveUser($userId, $userData) {
         $jsonUsers[] = $userData;
     }
     
-    saveAllUsers($jsonUsers);
+    $result = saveAllUsers($jsonUsers);
+    
+    if ($result === false) {
+        error_log("saveUser: Failed to save user data for userId: " . $userId);
+        return false;
+    }
+    
     return true;
 }
 
@@ -413,6 +430,11 @@ function getJsonUsers() {
  * Activate user
  */
 function activateUser($userId) {
+    if (empty($userId)) {
+        error_log("activateUser: User ID is empty");
+        return false;
+    }
+    
     $jsonUsers = getJsonUsers();
     $found = false;
     
@@ -437,7 +459,14 @@ function activateUser($userId) {
         );
     }
     
-    saveAllUsers($jsonUsers);
+    $result = saveAllUsers($jsonUsers);
+    
+    if ($result === false) {
+        error_log("activateUser: Failed to save user data for userId: " . $userId);
+        return false;
+    }
+    
+    error_log("activateUser: Successfully activated user: " . $userId);
     return true;
 }
 
@@ -445,6 +474,11 @@ function activateUser($userId) {
  * Deactivate user
  */
 function deactivateUser($userId, $reason = '') {
+    if (empty($userId)) {
+        error_log("deactivateUser: User ID is empty");
+        return false;
+    }
+    
     $jsonUsers = getJsonUsers();
     $found = false;
     
@@ -471,7 +505,14 @@ function deactivateUser($userId, $reason = '') {
         );
     }
     
-    saveAllUsers($jsonUsers);
+    $result = saveAllUsers($jsonUsers);
+    
+    if ($result === false) {
+        error_log("deactivateUser: Failed to save user data for userId: " . $userId);
+        return false;
+    }
+    
+    error_log("deactivateUser: Successfully deactivated user: " . $userId . " (reason: " . $reason . ")");
     return true;
 }
 
@@ -479,14 +520,36 @@ function deactivateUser($userId, $reason = '') {
  * Delete user
  */
 function deleteUser($userId) {
+    if (empty($userId)) {
+        error_log("deleteUser: User ID is empty");
+        return false;
+    }
+    
     $jsonUsers = getJsonUsers();
+    $found = false;
     $newUsers = array();
+    
     foreach ($jsonUsers as $user) {
         if ($user['id'] !== $userId) {
             $newUsers[] = $user;
+        } else {
+            $found = true;
         }
     }
-    saveAllUsers($newUsers);
+    
+    if (!$found) {
+        error_log("deleteUser: User not found: " . $userId);
+        return false;
+    }
+    
+    $result = saveAllUsers($newUsers);
+    
+    if ($result === false) {
+        error_log("deleteUser: Failed to save user data after deletion");
+        return false;
+    }
+    
+    error_log("deleteUser: Successfully deleted user: " . $userId);
     return true;
 }
 
@@ -525,9 +588,48 @@ function getUserStats() {
 }
 
 /**
- * Extend subscription for user
+ * Extend global subscription (main subscription)
+ */
+function extendSubscription($days) {
+    if (!is_numeric($days) || $days <= 0) {
+        error_log("extendSubscription: Invalid days parameter: " . $days);
+        return false;
+    }
+    
+    $sub = getSubscription();
+    
+    if (isSubscriptionActive()) {
+        $baseDate = $sub['end_date'];
+    } else {
+        $baseDate = date('Y-m-d');
+    }
+    
+    $sub['end_date'] = date('Y-m-d', strtotime($baseDate . ' + ' . intval($days) . ' days'));
+    $sub['status'] = 'active';
+    $sub['updated_at'] = date('Y-m-d H:i:s');
+    
+    $result = saveSubscription($sub);
+    
+    if ($result === false) {
+        error_log("extendSubscription: Failed to save subscription");
+        return false;
+    }
+    
+    error_log("extendSubscription: Successfully extended subscription by " . $days . " days. New end date: " . $sub['end_date']);
+    return true;
+}
+
+/**
+ * Extend subscription for user (deprecated - use extendSubscription instead)
+ * @deprecated Use extendSubscription() for global subscription
  */
 function extendUserSubscription($userId, $days) {
+    // For backward compatibility, if userId is 'main' or empty, extend global subscription
+    if ($userId === 'main' || empty($userId)) {
+        return extendSubscription($days);
+    }
+    
+    // For specific user (if needed in future)
     $sub = getSubscription();
     
     if (isSubscriptionActive()) {
@@ -550,7 +652,15 @@ function extendUserSubscription($userId, $days) {
 function setUserPackage($package, $days = 30) {
     global $subscriptionPackages;
     
+    // Validate package exists
     if (!isset($subscriptionPackages[$package])) {
+        error_log("setUserPackage: Invalid package: " . $package);
+        return false;
+    }
+    
+    // Validate days
+    if (!is_numeric($days) || $days <= 0) {
+        error_log("setUserPackage: Invalid days parameter: " . $days);
         return false;
     }
     
@@ -558,9 +668,16 @@ function setUserPackage($package, $days = 30) {
     $sub['status'] = 'active';
     $sub['package'] = $package;
     $sub['start_date'] = date('Y-m-d');
-    $sub['end_date'] = date('Y-m-d', strtotime('+' . $days . ' days'));
+    $sub['end_date'] = date('Y-m-d', strtotime('+' . intval($days) . ' days'));
     $sub['updated_at'] = date('Y-m-d H:i:s');
     
-    saveSubscription($sub);
+    $result = saveSubscription($sub);
+    
+    if ($result === false) {
+        error_log("setUserPackage: Failed to save subscription");
+        return false;
+    }
+    
+    error_log("setUserPackage: Successfully set package to " . $package . " for " . $days . " days. End date: " . $sub['end_date']);
     return true;
 }
