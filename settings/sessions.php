@@ -22,6 +22,10 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// Include security helpers
+include_once('./include/csrf.php');
+include_once('./include/input_validation.php');
+
 if (!isset($_SESSION["mikpay"])) {
   header("Location:./admin.php?id=login");
   exit;
@@ -31,6 +35,14 @@ if (!isset($_SESSION["mikpay"])) {
   try {
     include('./include/config.php');
     include('./include/readcfg.php');
+    // Include quickbt.php if exists to get $qrbt value
+    if (file_exists('./include/quickbt.php')) {
+      include('./include/quickbt.php');
+    }
+    // Initialize $qrbt if not set
+    if (!isset($qrbt)) {
+      $qrbt = 'disable';
+    }
   } catch (Exception $e) {
     die("Error loading configuration: " . $e->getMessage());
   }
@@ -38,30 +50,82 @@ if (!isset($_SESSION["mikpay"])) {
 // array color
   $color = array('1' => 'bg-blue', 'bg-indigo', 'bg-purple', 'bg-pink', 'bg-red', 'bg-yellow', 'bg-green', 'bg-teal', 'bg-cyan', 'bg-grey', 'bg-light-blue');
 
+  $errorMsg = '';
+  $successMsg = '';
+
   if (isset($_POST['save'])) {
+    // Validate CSRF token
+    if (!validateCSRFPost()) {
+      $errorMsg = 'Invalid security token. Please refresh the page.';
+    } else {
+      // Sanitize and validate username
+      $suseradm = sanitizeInput($_POST['useradm'] ?? '', 'alphanumeric');
+      
+      if (empty($suseradm)) {
+        $errorMsg = 'Username tidak boleh kosong!';
+      } elseif (strlen($suseradm) < 3 || strlen($suseradm) > 50) {
+        $errorMsg = 'Username harus antara 3-50 karakter!';
+      } else {
+        // Validate password
+        $newPassword = $_POST['passadm'] ?? '';
+        if (empty($newPassword)) {
+          $errorMsg = 'Password tidak boleh kosong!';
+        } else {
+          $spassadm = encrypt($newPassword);
+          $logobt = isset($_POST['logobt']) ? $_POST['logobt'] : '';
+          $qrbt = isset($_POST['qrbt']) ? $_POST['qrbt'] : 'disable';
 
-    $suseradm = ($_POST['useradm']);
-    $spassadm = encrypt($_POST['passadm']);
-    $logobt = ($_POST['logobt']);
-    $qrbt = ($_POST['qrbt']);
-
-    $cari = array('1' => "mikpay<|<$useradm", "mikpay>|>$passadm");
-    $ganti = array('1' => "mikpay<|<$suseradm", "mikpay>|>$spassadm");
-
-    for ($i = 1; $i < 3; $i++) {
-      $file = file("./include/config.php");
-      $content = file_get_contents("./include/config.php");
-      $newcontent = str_replace((string)$cari[$i], (string)$ganti[$i], "$content");
-      file_put_contents("./include/config.php", "$newcontent");
+          // Read config file once
+          $configFile = './include/config.php';
+          if (!file_exists($configFile)) {
+            $errorMsg = 'File konfigurasi tidak ditemukan!';
+          } else {
+            $content = file_get_contents($configFile);
+            
+            if ($content === false) {
+              $errorMsg = 'Gagal membaca file konfigurasi!';
+            } else {
+              // Replace username and password in one operation
+              $search = array(
+                "mikpay<|<$useradm",
+                "mikpay>|>$passadm"
+              );
+              $replace = array(
+                "mikpay<|<$suseradm",
+                "mikpay>|>$spassadm"
+              );
+              
+              $newcontent = str_replace($search, $replace, $content);
+              
+              // Write updated content
+              $result = file_put_contents($configFile, $newcontent);
+              
+              if ($result === false) {
+                $errorMsg = 'Gagal menyimpan perubahan ke file konfigurasi!';
+              } else {
+                // Update session if username changed
+                if ($suseradm !== $useradm) {
+                  $_SESSION["mikpay"] = $suseradm;
+                }
+                
+                // Save QR button setting
+                $gen = '<?php $qrbt="' . htmlspecialchars($qrbt, ENT_QUOTES, 'UTF-8') . '";?>';
+                $key = './include/quickbt.php';
+                $handle = fopen($key, 'w');
+                if ($handle) {
+                  fwrite($handle, $gen);
+                  fclose($handle);
+                }
+                
+                $successMsg = 'Username dan password berhasil diubah!';
+                // Redirect after successful update
+                echo "<script>setTimeout(function(){ window.location='./admin.php?id=sessions'; }, 1000);</script>";
+              }
+            }
+          }
+        }
+      }
     }
-
-  
-  $gen = '<?php $qrbt="' . $qrbt . '";?>';
-          $key = './include/quickbt.php';
-          $handle = fopen($key, 'w') or die('Cannot open file:  ' . $key);
-          $data = $gen;
-          fwrite($handle, $data);
-    echo "<script>window.location='./admin.php?id=sessions'</script>";
   }
 
 }
@@ -949,6 +1013,7 @@ if (!isset($_SESSION["mikpay"])) {
         <!-- Right Column - Admin Settings -->
         <div>
             <form autocomplete="off" method="post" action="">
+                <?= getCSRFTokenField() ?>
                 <div class="admin-panel">
                     <div class="admin-panel-header">
                         <div class="admin-panel-header-icon">
@@ -960,6 +1025,16 @@ if (!isset($_SESSION["mikpay"])) {
                         </div>
                     </div>
                     <div class="admin-panel-body">
+                        <?php if (!empty($errorMsg)): ?>
+                        <div style="padding: 12px; margin-bottom: 20px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #fca5a5;">
+                            <i class="fa fa-exclamation-circle"></i> <?= htmlspecialchars($errorMsg) ?>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($successMsg)): ?>
+                        <div style="padding: 12px; margin-bottom: 20px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 8px; color: #86efac;">
+                            <i class="fa fa-check-circle"></i> <?= htmlspecialchars($successMsg) ?>
+                        </div>
+                        <?php endif; ?>
                         <div class="form-group">
                             <label class="form-label">
                                 <i class="fa fa-user"></i>

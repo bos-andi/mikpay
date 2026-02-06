@@ -33,10 +33,18 @@ include_once(dirname(__FILE__) . '/../include/business_config.php');
 
 // Include Fonnte config (optional)
 $fonnteEnabled = false;
+$senderName = 'MIKPAY WiFi'; // Default sender name
 $fonnteFile = dirname(__FILE__) . '/../include/fonnte_config.php';
 if (file_exists($fonnteFile)) {
     include_once($fonnteFile);
     $fonnteEnabled = function_exists('isFonnteEnabled') ? isFonnteEnabled() : false;
+    // Get sender name from Fonnte settings
+    if (function_exists('getFonnteSettings')) {
+        $fonnteSettings = getFonnteSettings();
+        if (isset($fonnteSettings['sender_name']) && !empty($fonnteSettings['sender_name'])) {
+            $senderName = $fonnteSettings['sender_name'];
+        }
+    }
 }
 
     // Get PPP secrets
@@ -1495,13 +1503,14 @@ Pembayaran via Transfer:
 <?php endif; ?>
 
 Terima kasih,
-MIKPAY WiFi</textarea>
+{pengirim}</textarea>
         <div style="margin-top: 10px; padding: 10px; background: #f0f9ff; border-radius: 8px; font-size: 11px; color: #64748b;">
             <strong>Placeholder yang tersedia:</strong><br>
             {nama} - Nama pelanggan<br>
             {tanggal} - Tanggal jatuh tempo<br>
             {hari} - Hari tersisa<br>
             {nominal} - Nominal tagihan<br>
+            {pengirim} - Nama pengirim (dari pengaturan Fonnte)<br>
             <?php if (!empty($bankAccount)): ?>
             {rekening} - Nomor rekening bank<br>
             <?php endif; ?>
@@ -2009,6 +2018,7 @@ function toggleBankSettings() {
 var bankAccount = '<?= addslashes($bankAccount) ?>';
 var bankName = '<?= addslashes($bankName) ?>';
 var bankAccountName = '<?= addslashes($bankAccountName) ?>';
+var senderName = '<?= addslashes($senderName) ?>';
 var bankInfo = '';
 if (bankAccount) {
     var parts = [];
@@ -2031,15 +2041,16 @@ function sendWhatsApp(phone, name, dueDate, daysLeft, status, monthlyFee) {
     bulkMode = false;
     
     var nominal = formatRupiah(monthlyFee);
-    var template = 'Halo {nama},\n\nTagihan WiFi Anda untuk periode ini: *Rp {nominal}*\nJatuh tempo: {tanggal}\n\n';
+    var template = 'Halo {nama},\nini adalah pesan otomatis \n\nTagihan WiFi Anda untuk periode ini: *Rp {nominal}*\nJatuh tempo: {tanggal}\n\n';
     if (bankInfo) {
-        template += 'Pembayaran via Transfer:\n{rekening}\n\n';
+        template += 'Pembayaran Cash atau bisa via Transfer:\n{rekening}\n\n';
     }
-    template += 'Terima kasih,\nMIKPAY WiFi';
+    template += 'Terima kasih,\n{pengirim}';
     template = template.replace(/{nominal}/g, nominal);
-    if (bankInfo) {
+    if (bankInfo) {     
         template = template.replace(/{rekening}/g, bankInfo);
     }
+    template = template.replace(/{pengirim}/g, senderName);
     
     document.getElementById('waTemplate').value = template;
     document.getElementById('waModal').classList.add('show');
@@ -2059,7 +2070,7 @@ function showBulkWAModal() {
     if (bankInfo) {
         template += 'Pembayaran via Transfer:\n{rekening}\n\n';
     }
-    template += 'Terima kasih,\nMIKPAY WiFi';
+    template += 'Terima kasih,\n{pengirim}';
     
     document.getElementById('waTemplate').value = template;
     document.getElementById('waModal').classList.add('show');
@@ -2097,6 +2108,7 @@ function sendViaFonnte(btn) {
             if (bankInfo) {
                 message = message.replace(/{rekening}/g, bankInfo);
             }
+            message = message.replace(/{pengirim}/g, senderName);
             
             recipients.push({ phone: phone, message: message });
         });
@@ -2137,6 +2149,7 @@ function sendViaFonnte(btn) {
             if (bankInfo) {
                 message = message.replace(/{rekening}/g, bankInfo);
             }
+            message = message.replace(/{pengirim}/g, senderName);
             
             btn.disabled = true;
             btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mengirim...';
@@ -2189,6 +2202,7 @@ function confirmSendWA() {
             if (bankInfo) {
                 message = message.replace(/{rekening}/g, bankInfo);
             }
+            message = message.replace(/{pengirim}/g, senderName);
             
             var formattedPhone = phone.replace(/^0/, '62');
             window.open('https://wa.me/' + formattedPhone + '?text=' + encodeURIComponent(message), '_blank');
@@ -2205,6 +2219,7 @@ function confirmSendWA() {
             if (bankInfo) {
                 message = message.replace(/{rekening}/g, bankInfo);
             }
+            message = message.replace(/{pengirim}/g, senderName);
             
             var phone = currentCustomer.phone.replace(/^0/, '62');
             window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(message), '_blank');

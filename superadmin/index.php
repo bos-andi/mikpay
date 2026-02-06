@@ -1468,6 +1468,7 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'dashboard';
                     <td>
                         <?php if ($payment['status'] === 'pending'): ?>
                         <form method="POST" style="display:inline;">
+                            <?= getCSRFTokenField() ?>
                             <input type="hidden" name="payment_id" value="<?= $payment['id'] ?>">
                             <button type="submit" name="approve" class="action-btn approve">
                                 <i class="fa fa-check"></i> Approve

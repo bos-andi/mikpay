@@ -115,11 +115,14 @@ function approvePayment($paymentId) {
                 return false;
             }
             
+            // Normalize package name to lowercase for consistency
+            $packageKey = strtolower(trim($payment['package']));
+            
             // Activate subscription for user
-            $activationResult = activateSubscription($payment['package'], $paymentId);
+            $activationResult = activateSubscription($packageKey, $paymentId);
             
             if ($activationResult === false) {
-                error_log("Superadmin approvePayment: Failed to activate subscription for package: " . $payment['package']);
+                error_log("Superadmin approvePayment: Failed to activate subscription for package: " . $packageKey . " (original: " . $payment['package'] . ")");
                 return false;
             }
             
@@ -135,7 +138,7 @@ function approvePayment($paymentId) {
                 return false;
             }
             
-            error_log("Superadmin approvePayment: Successfully approved payment " . $paymentId . " for package " . $payment['package']);
+            error_log("Superadmin approvePayment: Successfully approved payment " . $paymentId . " for package " . $packageKey);
             return true;
         }
     }
